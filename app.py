@@ -12,6 +12,7 @@ from algorithms.sorting import SortingSolver
 from viz.knapsack_viz import KnapsackCanvas
 from viz.graph_viz import GraphCanvas
 from viz.sorting_viz import SortingCanvas
+from viz.code_viewer import CodeViewer
 
 class AlgoStepApp:
     def __init__(self, root):
@@ -276,11 +277,39 @@ class AlgoStepApp:
         right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self.sort_canvas = SortingCanvas(right, width=600, height=350)
         self.sort_canvas.pack(fill=tk.BOTH, expand=True, pady=5)
-        self.sort_log = tk.Text(right, height=10, bg='#ffffff', fg='black', font=('Segoe UI',9))
-        scroll = ttk.Scrollbar(right, command=self.sort_log.yview)
-        self.sort_log.configure(yscrollcommand=scroll.set)
-        self.sort_log.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Панель с логами и кодом
+        bottom_right = ttk.Frame(right)
+        bottom_right.pack(fill=tk.BOTH, expand=True)
+        self.sort_log = tk.Text(bottom_right, height=8, bg='#ffffff', fg='black', font=('Segoe UI',9))
+        self.sort_log.pack(fill=tk.BOTH, expand=True)
+        
+        # Окно с кодом алгоритма
+        code_frame = ttk.LabelFrame(bottom_right, text="Исходный код (C++)")
+        code_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+        
+        # Загружаем код для выбранного алгоритма
+        self.sort_code_viewer = CodeViewer(code_frame, code_text=self.get_sort_code("bubble"))
+        self.sort_code_viewer.pack(fill=tk.BOTH, expand=True)
+        
+        # Привязываем обновление кода при смене алгоритма
+        def update_code(*args):
+            algo = self.sort_algo.get()
+            code = self.get_sort_code(algo)
+            self.sort_code_viewer.update_code(code)
+        self.sort_algo.trace_add('write', update_code)
+
+    def get_sort_code(self, algo):
+        codes = {
+            "bubble": open("code_snippets/bubble_sort.cpp").read(),
+            "selection": open("code_snippets/selection_sort.cpp").read(),
+            "insertion": open("code_snippets/insertion_sort.cpp").read(),
+            "quick": "void quickSort(int arr[], int low, int high) {\n    if (low < high) {\n        int pi = partition(arr, low, high);\n        quickSort(arr, low, pi - 1);\n        quickSort(arr, pi + 1, high);\n    }\n}",
+            "merge": "void mergeSort(int arr[], int l, int r) {\n    if (l < r) {\n        int m = l + (r - l) / 2;\n        mergeSort(arr, l, m);\n        mergeSort(arr, m + 1, r);\n        merge(arr, l, m, r);\n    }\n}",
+            "counting": "void countingSort(int arr[], int n) {\n    int max_val = *max_element(arr, arr + n);\n    int min_val = *min_element(arr, arr + n);\n    int range = max_val - min_val + 1;\n    vector<int> count(range), output(n);\n    for (int i = 0; i < n; i++) count[arr[i] - min_val]++;\n    for (int i = 1; i < range; i++) count[i] += count[i-1];\n    for (int i = n-1; i >= 0; i--) output[count[arr[i] - min_val] - 1] = arr[i];\n}",
+            "heap": "void heapify(int arr[], int n, int i) {\n    int largest = i;\n    int l = 2*i + 1;\n    int r = 2*i + 2;\n    if (l < n && arr[l] > arr[largest]) largest = l;\n    if (r < n && arr[r] > arr[largest]) largest = r;\n    if (largest != i) {\n        swap(arr[i], arr[largest]);\n        heapify(arr, n, largest);\n    }\n}\n\nvoid heapSort(int arr[], int n) {\n    for (int i = n/2 - 1; i >= 0; i--) heapify(arr, n, i);\n    for (int i = n-1; i > 0; i--) {\n        swap(arr[0], arr[i]);\n        heapify(arr, i, 0);\n    }\n}"
+        }
+        return codes.get(algo, "// Код алгоритма будет добавлен")
 
     def random_array(self):
         arr = [random.randint(5, 99) for _ in range(10)]
@@ -306,7 +335,6 @@ class AlgoStepApp:
     def test_knapsack(self):
         self.test_output.delete(1.0, tk.END)
         self.test_output.insert(tk.END, "Тестирование алгоритмов рюкзака\n" + "="*40 + "\n")
-        # Тестовые наборы
         test_cases = [
             ([Item("A",2,3), Item("B",3,4), Item("C",4,5)], 5),
             ([Item("A",1,1), Item("B",2,2), Item("C",3,3), Item("D",4,4)], 5),
@@ -320,7 +348,7 @@ class AlgoStepApp:
                                ("DP", solver.dp), ("Ветви и границы", solver.branch_and_bound),
                                ("Отжиг", solver.simulated_annealing)]:
                 start = time.time()
-                val, _ = algo(lambda *args: None)  # без шагов
+                val, _ = algo(lambda *args: None)
                 elapsed = time.time() - start
                 results[name] = (val, elapsed)
             for name, (val, t) in results.items():
@@ -539,7 +567,9 @@ class AlgoStepApp:
                 self.sort_canvas.set_data(arr)
                 self.status_var.set("Сортировка...")
                 q = queue.Queue()
-                def callback(current_arr, desc, idx1, idx2):
+                def callback(current_arr, desc, line_num, idx1, idx2):
+                    if line_num != -1:
+                        self.sort_code_viewer.highlight_line(line_num)
                     if idx1 != -1 and idx2 != -1 and self.sort_animate.get():
                         q.put(('swap', current_arr, desc, idx1, idx2))
                     else:
