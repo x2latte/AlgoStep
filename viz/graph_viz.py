@@ -10,8 +10,6 @@ class GraphCanvas(tk.Canvas):
         self.highlighted_vertices = set()
         self.highlighted_edges = set()
         self.path = []
-        self.n = 0
-        self.bind("<Configure>", self.on_resize)
 
     def set_graph(self, graph, n_vertices):
         self.graph = graph
@@ -20,8 +18,6 @@ class GraphCanvas(tk.Canvas):
         self.redraw()
 
     def layout_circle(self):
-        if self.n == 0:
-            return
         w = self.winfo_width()
         h = self.winfo_height()
         if w < 50 or h < 50:
@@ -29,7 +25,6 @@ class GraphCanvas(tk.Canvas):
         center_x = w//2
         center_y = h//2
         rad = min(center_x, center_y) - 50
-        self.vertex_positions.clear()
         for i in range(self.n):
             angle = 2*math.pi*i/self.n
             x = center_x + rad*math.cos(angle)
@@ -54,10 +49,6 @@ class GraphCanvas(tk.Canvas):
         self.path = []
         self.redraw()
 
-    def on_resize(self, event):
-        self.layout_circle()
-        self.redraw()
-
     def redraw(self):
         self.delete("all")
         if not self.vertex_positions:
@@ -80,7 +71,7 @@ class GraphCanvas(tk.Canvas):
                     color = '#1E88E5'
                     width = 4
                 self.create_line(x1,y1,x2,y2, fill=color, width=width, arrow=tk.LAST, arrowshape=(8,10,5))
-                # Позиция для текста веса – смещённая от середины перпендикулярно
+                # Вес над линией с фоном (без bg и pad)
                 mx, my = (x1+x2)/2, (y1+y2)/2
                 dx, dy = x2-x1, y2-y1
                 length = math.hypot(dx, dy)
@@ -90,7 +81,6 @@ class GraphCanvas(tk.Canvas):
                     ny = dx/length * offset
                     mx += nx
                     my += ny
-                # Создаём текст без фона (bg не поддерживается, используем fill)
                 self.create_text(mx, my, text=str(w), fill='#1A1A1A', font=('Arial',12,'bold'))
         # Вершины
         for i,(x,y) in self.vertex_positions.items():

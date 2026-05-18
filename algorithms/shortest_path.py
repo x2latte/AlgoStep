@@ -42,7 +42,7 @@ class ShortestPathSolver:
             path.append(cur)
             cur = prev[cur]
         path.reverse()
-        step_callback(f"Кратчайшее расстояние = {dist[self.target]}", -1, dist[self.target], dist, visited, path, None)
+        step_callback(f"✅ Кратчайшее расстояние = {dist[self.target]}", -1, dist[self.target], dist, visited, path, None)
         return dist[self.target], path
 
     def heuristic(self, a: int, b: int) -> int:
@@ -80,7 +80,7 @@ class ShortestPathSolver:
             path.append(cur)
             cur = prev[cur]
         path.reverse()
-        step_callback(f"A* завершён. Расстояние = {g_score[self.target]}", -1, g_score[self.target], g_score, closed, path, None)
+        step_callback(f"✅ A* завершён. Расстояние = {g_score[self.target]}", -1, g_score[self.target], g_score, closed, path, None)
         return g_score[self.target], path
 
     def brute_force(self, step_callback: Callable) -> Tuple[int, List[int]]:
@@ -89,10 +89,10 @@ class ShortestPathSolver:
         best_path = []
         visited = [False]*self.n
         cur_path = []
-        # Используем nonlocal для изменения best_dist и best_path внутри dfs
         def dfs(v, cur_dist):
             nonlocal best_dist, best_path
-            if self.stopped: return
+            if self.stopped:
+                return
             visited[v] = True
             cur_path.append(v)
             step_callback(f"Посещаем {v}, длина пути {cur_dist}", v, cur_dist, [], visited, cur_path, None)
@@ -108,7 +108,7 @@ class ShortestPathSolver:
             visited[v] = False
             cur_path.pop()
         dfs(self.source, 0)
-        step_callback(f"Перебор закончен, лучший путь = {best_dist}", -1, best_dist, [], visited, best_path, None)
+        step_callback(f"✅ Перебор закончен, лучший путь = {best_dist}", -1, best_dist, [], visited, best_path, None)
         return best_dist, best_path
 
     def bellman_ford(self, step_callback: Callable) -> Tuple[int, List[int]]:
@@ -134,7 +134,7 @@ class ShortestPathSolver:
             path.append(cur)
             cur = prev[cur]
         path.reverse()
-        step_callback(f"Беллман-Форд: расстояние {dist[self.target]}", -1, dist[self.target], dist, [], path, None)
+        step_callback(f"✅ Беллман-Форд: расстояние {dist[self.target]}", -1, dist[self.target], dist, [], path, None)
         return dist[self.target], path
 
     def floyd_warshall(self, step_callback: Callable) -> Tuple[int, List[int]]:
@@ -163,5 +163,5 @@ class ShortestPathSolver:
                 cur = next_vertex[cur][self.target]
                 if cur == -1: break
             path.append(self.target)
-        step_callback(f"Флойд-Уоршелл: расстояние = {dist[self.source][self.target]}", -1, dist[self.source][self.target], dist, [], path, None)
+        step_callback(f"✅ Флойд-Уоршелл: расстояние = {dist[self.source][self.target]}", -1, dist[self.source][self.target], dist, [], path, None)
         return dist[self.source][self.target], path

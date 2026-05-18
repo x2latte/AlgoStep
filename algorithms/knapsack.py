@@ -23,7 +23,8 @@ class KnapsackSolver:
         taken = [False]*len(self.items)
         weight, value = 0, 0
         for idx in indices:
-            if self.stopped: break
+            if self.stopped:
+                break
             desc = f"Рассматриваем {self.items[idx].name} (вес {self.items[idx].weight}, ценность {self.items[idx].value})"
             if weight + self.items[idx].weight <= self.capacity:
                 taken[idx] = True
@@ -33,13 +34,15 @@ class KnapsackSolver:
             else:
                 desc += " → не влезает"
             step_callback(desc, taken.copy(), value, self.capacity - weight)
+        step_callback("✅ Жадный алгоритм завершён", taken, value, self.capacity - weight)
         return value, taken
 
     def brute_force(self, step_callback: Callable) -> Tuple[int, List[bool]]:
         n = len(self.items)
         best_val, best_taken = 0, [False]*n
         for mask in range(1<<n):
-            if self.stopped: break
+            if self.stopped:
+                break
             weight, val = 0, 0
             taken = [False]*n
             for i in range(n):
@@ -52,7 +55,7 @@ class KnapsackSolver:
                 best_val, best_taken = val, taken.copy()
                 desc += " ★ НОВАЯ ЛУЧШАЯ!"
             step_callback(desc, taken, val, self.capacity - weight)
-        step_callback("Оптимум найден!", best_taken, best_val, self.capacity - sum(self.items[i].weight for i in range(n) if best_taken[i]))
+        step_callback("✅ Оптимум найден!", best_taken, best_val, self.capacity - sum(self.items[i].weight for i in range(n) if best_taken[i]))
         return best_val, best_taken
 
     def dp(self, step_callback: Callable) -> Tuple[int, List[bool]]:
@@ -60,21 +63,23 @@ class KnapsackSolver:
         dp = [[0]*(cap+1) for _ in range(n+1)]
         for i in range(1, n+1):
             for w in range(cap+1):
-                if self.stopped: break
+                if self.stopped:
+                    break
                 if self.items[i-1].weight <= w:
                     dp[i][w] = max(dp[i-1][w], dp[i-1][w-self.items[i-1].weight] + self.items[i-1].value)
                 else:
                     dp[i][w] = dp[i-1][w]
                 if w % max(1, cap//10) == 0 or w == cap:
                     step_callback(f"DP: [{i}][{w}] = {dp[i][w]}", [], dp[i][w], cap-w, dp)
-            if self.stopped: break
+            if self.stopped:
+                break
         taken = [False]*n
         w = cap
         for i in range(n,0,-1):
             if dp[i][w] != dp[i-1][w]:
                 taken[i-1] = True
                 w -= self.items[i-1].weight
-        step_callback(f"DP завершён. Ценность = {dp[n][cap]}", taken, dp[n][cap], w, dp)
+        step_callback(f"✅ DP завершён. Ценность = {dp[n][cap]}", taken, dp[n][cap], w, dp)
         return dp[n][cap], taken
 
     def branch_and_bound(self, step_callback: Callable) -> Tuple[int, List[bool]]:
@@ -125,14 +130,13 @@ class KnapsackSolver:
 
         step_callback("Запуск метода ветвей и границ...", [False]*n, 0, self.capacity)
         dfs(0, 0, 0, [])
-        step_callback(f"Ветви и границы: оптимальная ценность = {best_val}", best_taken, best_val, 
+        step_callback(f"✅ Ветви и границы: оптимальная ценность = {best_val}", best_taken, best_val, 
                       self.capacity - sum(self.items[i].weight for i in range(n) if best_taken[i]))
         return best_val, best_taken
 
     def simulated_annealing(self, step_callback: Callable) -> Tuple[int, List[bool]]:
-        """Метод имитации отжига (эвристика)"""
         n = len(self.items)
-        # Начальное решение: жадное
+        # начальное решение: жадное
         current_taken = [False]*n
         weight = 0
         value = 0
@@ -152,7 +156,6 @@ class KnapsackSolver:
             new_taken = current_taken[:]
             idx = random.randint(0, n-1)
             new_taken[idx] = not new_taken[idx]
-            # Проверяем вес
             new_weight = sum(self.items[i].weight for i in range(n) if new_taken[i])
             if new_weight <= self.capacity:
                 new_value = sum(self.items[i].value for i in range(n) if new_taken[i])
@@ -167,5 +170,5 @@ class KnapsackSolver:
                         step_callback(f"Отжиг: новое лучшее решение, ценность = {best_val}", best_taken, best_val, self.capacity - weight)
             temperature *= cooling_rate
             step_callback(f"Отжиг: температура = {temperature:.2f}, текущая ценность = {value}", current_taken, value, self.capacity - weight)
-        step_callback(f"Отжиг завершён, лучшая ценность = {best_val}", best_taken, best_val, self.capacity - sum(self.items[i].weight for i in range(n) if best_taken[i]))
+        step_callback(f"✅ Отжиг завершён, лучшая ценность = {best_val}", best_taken, best_val, self.capacity - sum(self.items[i].weight for i in range(n) if best_taken[i]))
         return best_val, best_taken
