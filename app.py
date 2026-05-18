@@ -31,15 +31,18 @@ class AlgoStepApp:
         self.current_solver = None
         self.loop_active = False
         self.speed_var = tk.DoubleVar(value=0.3)
-        self.worker_thread = None
-        self.should_stop = False
         self._after_ids = []
+        self.closing = False
+
+        self.status_var = tk.StringVar(value="Готов")
+        status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W, font=('Segoe UI', 9))
+        status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
         self.create_widgets()
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def on_closing(self):
-        self.should_stop = True
+        self.closing = True
         if self.current_solver:
             self.current_solver.stop()
         for after_id in self._after_ids:
@@ -57,11 +60,6 @@ class AlgoStepApp:
         return after_id
 
     def create_widgets(self):
-        # Статус-бар должен быть создан до вкладок, чтобы кнопки сброса могли его использовать
-        self.status_var = tk.StringVar(value="Готов")
-        status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W, font=('Segoe UI', 9))
-        status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-
         notebook = ttk.Notebook(self.root)
         notebook.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
 
@@ -81,19 +79,7 @@ class AlgoStepApp:
         notebook.add(self.test_frame, text="🧪 Тестирование")
         self.setup_testing()
 
-    def show_info(self, title, text):
-        info_win = tk.Toplevel(self.root)
-        info_win.title(title)
-        info_win.geometry("600x500")
-        text_widget = tk.Text(info_win, wrap=tk.WORD, bg='#ffffe0', fg='black', font=('Segoe UI',10))
-        text_widget.insert(tk.END, text)
-        text_widget.config(state=tk.DISABLED)
-        scroll = ttk.Scrollbar(info_win, command=text_widget.yview)
-        text_widget.configure(yscrollcommand=scroll.set)
-        text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-    # ------------------- Рюкзак -------------------
+    # ==================== РЮКЗАК ====================
     def setup_knapsack(self):
         main_panel = ttk.Frame(self.knap_frame)
         main_panel.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -108,13 +94,7 @@ class AlgoStepApp:
         ttk.Button(top_left, text="🎲 Случайные данные", command=self.random_knapsack).pack(side=tk.LEFT, padx=5)
         ttk.Button(top_left, text="❓", width=3, command=lambda: self.show_info("Задача о рюкзаке",
             "Задача о рюкзаке: выбрать набор предметов с максимальной суммарной ценностью, не превышая вместимость.\n\n"
-            "Алгоритмы:\n"
-            "• Жадный: берёт предметы с лучшим соотношением ценность/вес. Быстро, но не всегда оптимально.\n"
-            "• Полный перебор: проверяет все 2^n комбинаций. Точно, но медленно.\n"
-            "• Динамическое программирование: заполняет таблицу O(n*W). Точно, умеренно быстро.\n"
-            "• Ветви и границы: умный перебор с отсечением. Точно, быстрее полного.\n"
-            "• Имитация отжига: эвристика, ищет приближённое решение.\n\n"
-            "Цвета: зелёный - предмет взят, розовый - не взят. Заливка рюкзака показывает заполненность.")).pack(side=tk.LEFT, padx=5)
+            "Алгоритмы:\n• Жадный\n• Полный перебор\n• Динамическое программирование\n• Ветви и границы\n• Имитация отжига")).pack(side=tk.LEFT, padx=5)
 
         ttk.Label(left, text="Предметы (название вес ценность):").pack(anchor=tk.W, pady=(10,0))
         self.items_text = tk.Text(left, height=6, width=32, bg='#ffffff', fg='black', font=('Consolas',9))
@@ -171,7 +151,99 @@ class AlgoStepApp:
         code = CodeLoader.get_knapsack_code(algo)
         self.colorize_code(self.knap_code, code)
 
-    # ------------------- Граф -------------------
+    def random_knapsack(self):
+        n = random.randint(3, 6)
+        cap = random.randint(10, 30)
+        self.capacity_spin.set(cap)
+        items = []
+        names = ["Книга", "Ручка", "Ноутбук", "Телефон", "Флешка", "Часы", "Кофе", "Зонт", "Очки", "Блокнот"]
+        for i in range(n):
+            name = random.choice(names) + str(i)
+            weight = random.randint(1, 10)
+            value = random.randint(1, 20)
+            items.append(f"{name} {weight} {value}")
+        self.items_text.delete(1.0, tk.END)
+        self.items_text.insert(tk.END, "\n".join(items))
+
+    def parse_items(self):
+        lines = self.items_text.get("1.0", tk.END).strip().splitlines()
+        items = []
+        for line in lines:
+            parts = line.split()
+            if len(parts) == 3:
+                try:
+                    w = int(parts[1])
+                    v = int(parts[2])
+                    items.append(Item(parts[0], w, v))
+                except:
+                    self.items_text.config(bg='#ffcccc')
+                    raise ValueError("Вес и ценность должны быть целыми числами")
+            else:
+                self.items_text.config(bg='#ffcccc')
+                raise ValueError("Каждая строка должна содержать: название вес ценность")
+        self.items_text.config(bg='#ffffff')
+        return items, self.capacity_spin.get()
+
+    def run_knapsack(self):
+        try:
+            items, cap = self.parse_items()
+        except ValueError as e:
+            self.status_var.set(f"Ошибка ввода: {e}")
+            return
+        if not items:
+            self.status_var.set("Ошибка: нет предметов")
+            return
+        self.run_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.NORMAL)
+        self.loop_active = self.loop_var.get()
+        def worker():
+            while True:
+                if self.current_solver:
+                    self.current_solver.stop()
+                solver = KnapsackSolver(items, cap)
+                self.current_solver = solver
+                self.knap_log.delete(1.0, tk.END)
+                self.knap_canvas.set_problem(cap, items)
+                self.status_var.set("Выполняется рюкзак...")
+                q = queue.Queue()
+                def callback(desc, taken, cur_val, left, dp_table=None):
+                    q.put(('knap', desc, taken, cur_val, left))
+                def process_queue():
+                    try:
+                        while True:
+                            typ, desc, taken, cur_val, left = q.get_nowait()
+                            if not self.knap_log.winfo_exists():
+                                return
+                            self.knap_log.insert(tk.END, desc + "\n")
+                            self.knap_log.see(tk.END)
+                            self.knap_canvas.update_state(taken, cap-left, cur_val)
+                            self.root.update()
+                            delay = self.speed_var.get() if self.step_mode.get() else 0
+                            if delay>0: time.sleep(delay)
+                            q.task_done()
+                    except queue.Empty:
+                        pass
+                    finally:
+                        if self.knap_log.winfo_exists():
+                            self.safe_after(50, process_queue)
+                process_queue()
+                algo = self.algo_var.get()
+                if algo == "greedy": solver.greedy(callback)
+                elif algo == "brute": solver.brute_force(callback)
+                elif algo == "dp": solver.dp(callback)
+                elif algo == "bnb": solver.branch_and_bound(callback)
+                else: solver.simulated_annealing(callback)
+                if solver.stopped: self.status_var.set("Остановлено")
+                else: self.status_var.set("Алгоритм рюкзака завершён")
+                if not self.loop_active or solver.stopped:
+                    break
+                time.sleep(0.5)
+            self.root.after(0, lambda: self.run_btn.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.stop_btn.config(state=tk.DISABLED))
+            self.current_solver = None
+        threading.Thread(target=worker, daemon=True).start()
+
+    # ==================== ГРАФ ====================
     def setup_graph(self):
         main_panel = ttk.Frame(self.graph_frame)
         main_panel.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -183,13 +255,7 @@ class AlgoStepApp:
         ttk.Button(top_left, text="🎲 Случайный граф", command=self.random_graph).pack(side=tk.LEFT, padx=5)
         ttk.Button(top_left, text="❓", width=3, command=lambda: self.show_info("Кратчайший путь",
             "Задача поиска кратчайшего пути: найти путь минимальной длины между двумя вершинами.\n\n"
-            "Алгоритмы:\n"
-            "• Дейкстра: жадный, работает с неотрицательными весами.\n"
-            "• Полный перебор (DFS): проверяет все пути, точен, но экспоненциален. При >8 вершин возможно замедление.\n"
-            "• Беллман-Форд: допускает отрицательные рёбра, находит кратчайшие пути.\n"
-            "• A*: эвристический, обычно быстрее Дейкстры.\n"
-            "• Флойд-Уоршелл: находит кратчайшие пути между всеми парами.\n\n"
-            "Подсветка: текущая вершина - салатовая, релаксируемое ребро - оранжевое, итоговый путь - синий.")).pack(side=tk.LEFT, padx=5)
+            "Алгоритмы:\n• Дейкстра\n• Полный перебор (DFS)\n• Беллман-Форд\n• A*\n• Флойд-Уоршелл")).pack(side=tk.LEFT, padx=5)
 
         ttk.Label(left, text="Граф (список рёбер):").pack(anchor=tk.W, pady=(10,0))
         self.graph_text = tk.Text(left, height=8, width=35, bg='#ffffff', fg='black', font=('Consolas',9))
@@ -250,125 +316,6 @@ class AlgoStepApp:
         code = CodeLoader.get_graph_code(algo)
         self.colorize_code(self.graph_code, code)
 
-    # ------------------- Сортировка -------------------
-    def setup_sorting(self):
-        main_panel = ttk.Frame(self.sort_frame)
-        main_panel.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        left = ttk.Frame(main_panel)
-        left.pack(side=tk.LEFT, fill=tk.BOTH, expand=False, padx=5)
-
-        top_left = ttk.Frame(left)
-        top_left.pack(fill=tk.X)
-        ttk.Button(top_left, text="🎲 Случайный массив", command=self.random_array).pack(side=tk.LEFT, padx=5)
-        ttk.Button(top_left, text="❓", width=3, command=lambda: self.show_info("Сортировка",
-            "Сортировка – упорядочивание элементов по возрастанию.\n\n"
-            "Алгоритмы:\n"
-            "• Пузырьковая: O(n²), простой.\n"
-            "• Выбором: O(n²), находит минимум.\n"
-            "• Вставками: O(n²), хорош для малых данных.\n"
-            "• Быстрая: O(n log n), рекурсивная.\n"
-            "• Слиянием: O(n log n), стабильная.\n"
-            "• Подсчётом: O(n+k), только для целых чисел.\n\n"
-            "Подсветка: красный и оранжевый – сравниваемые элементы.")).pack(side=tk.LEFT, padx=5)
-
-        ttk.Label(left, text="Исходный массив (числа через пробел):").pack(anchor=tk.W)
-        self.sort_array_text = tk.Text(left, height=4, width=30, bg='#ffffff', fg='black', font=('Consolas',9))
-        self.sort_array_text.pack(pady=5)
-        self.sort_array_text.insert(tk.END, "64 25 12 22 11 90 5 33")
-        self.sort_array_text.bind("<FocusIn>", lambda e: self.sort_array_text.config(bg='#ffffff'))
-
-        # Сохраняем исходный массив для кнопки сброса
-        self.original_sort_array = None
-
-        algo_frame = ttk.LabelFrame(left, text="Алгоритм сортировки")
-        algo_frame.pack(fill=tk.X, pady=5)
-        self.sort_algo = tk.StringVar(value="bubble")
-        algorithms = [("Пузырьковая", "bubble"), ("Выбором", "selection"), ("Вставками", "insertion"),
-                      ("Быстрая", "quick"), ("Слиянием", "merge"), ("Подсчётом", "counting")]
-        for text, val in algorithms:
-            ttk.Radiobutton(algo_frame, text=text, variable=self.sort_algo, value=val).pack(anchor=tk.W, padx=5, pady=1)
-
-        self.sort_step_mode = tk.BooleanVar(value=True)
-        ttk.Checkbutton(left, text="Пошаговый режим", variable=self.sort_step_mode).pack(anchor=tk.W, pady=5)
-        self.sort_animate = tk.BooleanVar(value=False)
-        ttk.Checkbutton(left, text="Плавная анимация обмена", variable=self.sort_animate).pack(anchor=tk.W, pady=2)
-        speed_frame = ttk.Frame(left)
-        speed_frame.pack(fill=tk.X, pady=5)
-        ttk.Label(speed_frame, text="Скорость:").pack(side=tk.LEFT)
-        self.sort_speed_scale = ttk.Scale(speed_frame, from_=0.05, to=1.0, variable=self.speed_var, orient=tk.HORIZONTAL)
-        self.sort_speed_scale.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        self.sort_loop_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(left, text="Циклический повтор", variable=self.sort_loop_var).pack(anchor=tk.W, pady=5)
-
-        btn_frame = ttk.Frame(left)
-        btn_frame.pack(pady=10)
-        self.run_sort_btn = ttk.Button(btn_frame, text="▶ ЗАПУСТИТЬ", command=self.run_sorting)
-        self.run_sort_btn.pack(side=tk.LEFT, padx=5)
-        self.stop_sort_btn = ttk.Button(btn_frame, text="⏹ СТОП", command=self.stop_algorithm, state=tk.DISABLED)
-        self.stop_sort_btn.pack(side=tk.LEFT, padx=5)
-        self.reset_sort_btn = ttk.Button(btn_frame, text="⟳ Сброс к исходному", command=self.reset_sorting)
-        self.reset_sort_btn.pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="🗑 Очистить лог", command=lambda: self.sort_log.delete(1.0, tk.END)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="💾 Сохранить лог", command=lambda: self.save_log(self.sort_log.get(1.0, tk.END))).pack(side=tk.LEFT, padx=5)
-
-        right = ttk.Frame(main_panel)
-        right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-        self.sort_canvas = SortingCanvas(right, width=600, height=300)
-        self.sort_canvas.pack(fill=tk.BOTH, expand=True, pady=5)
-        self.sort_log = tk.Text(right, height=6, bg='#ffffff', fg='black', font=('Segoe UI',9))
-        self.sort_log.pack(fill=tk.BOTH, expand=True)
-
-        code_frame = ttk.LabelFrame(right, text="Исходный код (C++)")
-        code_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        self.sort_code = tk.Text(code_frame, wrap=tk.WORD, font=('Courier', 10), bg='#1e1e1e')
-        self.sort_code.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.update_sort_code()
-        self.sort_algo.trace_add('write', lambda *args: self.update_sort_code())
-        # Инициализация случайным массивом
-        self.random_array()
-
-    def reset_sorting(self):
-        """Сброс к исходному массиву (последний введённый или сгенерированный)"""
-        if self.original_sort_array is not None:
-            self.sort_canvas.set_data(self.original_sort_array)
-            self.sort_array_text.delete(1.0, tk.END)
-            self.sort_array_text.insert(tk.END, ' '.join(map(str, self.original_sort_array)))
-            self.status_var.set("Сброс к исходному массиву")
-        else:
-            self.status_var.set("Нет сохранённого исходного массива")
-
-    def update_sort_code(self):
-        algo = self.sort_algo.get()
-        code = CodeLoader.get_sort_code(algo)
-        self.colorize_code(self.sort_code, code)
-
-    def colorize_code(self, text_widget, raw_code):
-        text_widget.config(state=tk.NORMAL)
-        text_widget.delete(1.0, tk.END)
-        lines = raw_code.split('\n')
-        for line in lines:
-            if line.strip().startswith('//'):
-                text_widget.insert(tk.END, line + '\n', 'comment')
-            else:
-                text_widget.insert(tk.END, line + '\n', 'code')
-        text_widget.tag_config('comment', foreground='#6a9955', font=('Courier', 10, 'italic'))
-        text_widget.tag_config('code', foreground='#d4d4d4', font=('Courier', 10))
-        text_widget.config(state=tk.DISABLED)
-
-    def random_knapsack(self):
-        n = random.randint(3, 6)
-        cap = random.randint(10, 30)
-        self.capacity_spin.set(cap)
-        items = []
-        names = ["Книга", "Ручка", "Ноутбук", "Телефон", "Флешка", "Часы", "Кофе", "Зонт", "Очки", "Блокнот"]
-        for i in range(n):
-            name = random.choice(names) + str(i)
-            weight = random.randint(1, 10)
-            value = random.randint(1, 20)
-            items.append(f"{name} {weight} {value}")
-        self.items_text.delete(1.0, tk.END)
-        self.items_text.insert(tk.END, "\n".join(items))
-
     def random_graph(self):
         n = random.randint(3, 6)
         edges = []
@@ -381,205 +328,6 @@ class AlgoStepApp:
         self.graph_text.insert(tk.END, "\n".join(edges))
         self.start_var.set(random.randint(0, n-1))
         self.target_var.set(random.randint(0, n-1))
-
-    def random_array(self):
-        arr = [random.randint(5, 99) for _ in range(10)]
-        self.original_sort_array = arr[:]  # сохраняем
-        self.sort_array_text.delete(1.0, tk.END)
-        self.sort_array_text.insert(tk.END, ' '.join(map(str, arr)))
-        self.sort_canvas.set_data(arr)
-        self.status_var.set("Сгенерирован случайный массив")
-
-    def save_log(self, log_text):
-        if not log_text.strip():
-            messagebox.showwarning("Нет данных", "Лог пуст, нечего сохранять.")
-            return
-        file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
-        if file_path:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(log_text)
-            self.status_var.set(f"Лог сохранён: {os.path.basename(file_path)}")
-
-    # ------------------- Тестирование -------------------
-    def setup_testing(self):
-        main = ttk.Frame(self.test_frame)
-        main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        ttk.Label(main, text="Автоматическое тестирование алгоритмов", font=('Segoe UI',12)).pack(anchor=tk.W)
-        btn_frame = ttk.Frame(main)
-        btn_frame.pack(fill=tk.X, pady=5)
-        ttk.Button(btn_frame, text="Тестировать рюкзак", command=self.test_knapsack).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Тестировать граф", command=self.test_graph).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Тестировать сортировку", command=self.test_sorting).pack(side=tk.LEFT, padx=5)
-        self.test_output = tk.Text(main, height=20, bg='#ffffff', fg='black', font=('Consolas',10))
-        self.test_output.pack(fill=tk.BOTH, expand=True, pady=10)
-        scroll = ttk.Scrollbar(main, command=self.test_output.yview)
-        self.test_output.configure(yscrollcommand=scroll.set)
-        scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-    def test_knapsack(self):
-        self.test_output.delete(1.0, tk.END)
-        self.test_output.insert(tk.END, "Тестирование алгоритмов рюкзака\n" + "="*40 + "\n")
-        test_cases = [
-            ([Item("A",2,3), Item("B",3,4), Item("C",4,5)], 5),
-            ([Item("A",1,1), Item("B",2,2), Item("C",3,3), Item("D",4,4)], 5),
-            ([Item("A",5,10), Item("B",3,7), Item("C",2,4)], 8),
-            ([Item("A",3,6), Item("B",4,8), Item("C",2,5), Item("D",5,9)], 9)
-        ]
-        for idx, (items, cap) in enumerate(test_cases):
-            self.test_output.insert(tk.END, f"\nТест {idx+1}: вместимость={cap}, предметов={len(items)}\n")
-            solver = KnapsackSolver(items, cap)
-            results = {}
-            for name, algo in [("Жадный", solver.greedy), ("Полный перебор", solver.brute_force),
-                               ("DP", solver.dp), ("Ветви и границы", solver.branch_and_bound),
-                               ("Отжиг", solver.simulated_annealing)]:
-                start = time.time()
-                val, _ = algo(lambda *args: None)
-                elapsed = time.time() - start
-                results[name] = (val, elapsed)
-            for name, (val, t) in results.items():
-                self.test_output.insert(tk.END, f"  {name:15}: ценность={val:3}, время={t:.5f} сек\n")
-        self.test_output.insert(tk.END, "\nТестирование завершено.\n")
-
-    def test_graph(self):
-        self.test_output.delete(1.0, tk.END)
-        self.test_output.insert(tk.END, "Тестирование алгоритмов поиска пути\n" + "="*40 + "\n")
-        test_cases = [
-            ({0:[(1,2),(2,4)], 1:[(2,1),(3,7)], 2:[(4,3)], 3:[(4,1)]}, 0, 4, 5),
-            ({0:[(1,1)], 1:[(2,1)], 2:[(3,1)], 3:[]}, 0, 3, 4),
-            ({0:[(1,5)], 1:[(2,3)], 2:[(3,2)], 3:[]}, 0, 3, 4)
-        ]
-        for idx, (graph, src, tgt, n) in enumerate(test_cases):
-            self.test_output.insert(tk.END, f"\nТест {idx+1}: вершин={n}, старт={src}, цель={tgt}\n")
-            results = {}
-            for name, algo in [("Дейкстра", lambda s: s.dijkstra), ("Полный перебор", lambda s: s.brute_force),
-                               ("Беллман-Форд", lambda s: s.bellman_ford), ("A*", lambda s: s.a_star),
-                               ("Флойд-Уоршелл", lambda s: s.floyd_warshall)]:
-                start = time.time()
-                solver = ShortestPathSolver(graph, src, tgt, n)
-                dist, _ = algo(solver)(lambda *args: None)
-                elapsed = time.time() - start
-                results[name] = (dist, elapsed)
-            for name, (d, t) in results.items():
-                self.test_output.insert(tk.END, f"  {name:15}: расстояние={d:3}, время={t:.5f} сек\n")
-        self.test_output.insert(tk.END, "\nТестирование завершено.\n")
-
-    def test_sorting(self):
-        self.test_output.delete(1.0, tk.END)
-        self.test_output.insert(tk.END, "Тестирование алгоритмов сортировки\n" + "="*40 + "\n")
-        test_arrays = [
-            [64, 25, 12, 22, 11, 90, 5, 33],
-            [3, 2, 1, 5, 4],
-            [1, 2, 3, 4, 5],
-            [5, 4, 3, 2, 1],
-            [10, 20, 30, 40, 50]
-        ]
-        for idx, arr in enumerate(test_arrays):
-            self.test_output.insert(tk.END, f"\nТест {idx+1}: длина {len(arr)}\nИсходный: {arr}\n")
-            results = {}
-            for name, algo in [("Пузырьковая", "bubble_sort"), ("Выбором", "selection_sort"),
-                               ("Вставками", "insertion_sort"), ("Быстрая", "quick_sort"),
-                               ("Слиянием", "merge_sort"), ("Подсчётом", "counting_sort")]:
-                solver = SortingSolver(arr)
-                start = time.time()
-                getattr(solver, algo)(lambda *args: None)
-                elapsed = time.time() - start
-                results[name] = elapsed
-            for name, t in results.items():
-                self.test_output.insert(tk.END, f"  {name:15}: время={t:.5f} сек\n")
-        self.test_output.insert(tk.END, "\nТестирование завершено.\n")
-
-    # ------------------- Общие методы остановки -------------------
-    def stop_algorithm(self):
-        if self.current_solver:
-            self.current_solver.stop()
-        self.status_var.set("Остановка...")
-        self.run_btn.config(state=tk.NORMAL)
-        self.stop_btn.config(state=tk.DISABLED)
-        self.run_path_btn.config(state=tk.NORMAL)
-        self.stop_path_btn.config(state=tk.DISABLED)
-        self.run_sort_btn.config(state=tk.NORMAL)
-        self.stop_sort_btn.config(state=tk.DISABLED)
-
-    def parse_items(self):
-        lines = self.items_text.get("1.0", tk.END).strip().splitlines()
-        items = []
-        for line in lines:
-            parts = line.split()
-            if len(parts) == 3:
-                try:
-                    w = int(parts[1])
-                    v = int(parts[2])
-                    items.append(Item(parts[0], w, v))
-                except:
-                    self.items_text.config(bg='#ffcccc')
-                    raise ValueError("Вес и ценность должны быть целыми числами")
-            else:
-                self.items_text.config(bg='#ffcccc')
-                raise ValueError("Каждая строка должна содержать: название вес ценность")
-        self.items_text.config(bg='#ffffff')
-        return items, self.capacity_spin.get()
-
-    # ------------------- Запуск алгоритмов -------------------
-    def run_knapsack(self):
-        try:
-            items, cap = self.parse_items()
-        except ValueError as e:
-            self.status_var.set(f"Ошибка ввода: {e}")
-            return
-        if not items:
-            self.status_var.set("Ошибка: нет предметов")
-            return
-        self.run_btn.config(state=tk.DISABLED)
-        self.stop_btn.config(state=tk.NORMAL)
-        self.loop_active = self.loop_var.get()
-        def worker():
-            while True:
-                if self.current_solver:
-                    self.current_solver.stop()
-                solver = KnapsackSolver(items, cap)
-                self.current_solver = solver
-                self.knap_log.delete(1.0, tk.END)
-                self.knap_canvas.set_problem(cap, items)
-                self.status_var.set("Выполняется рюкзак...")
-                q = queue.Queue()
-                def callback(desc, taken, cur_val, left, dp_table=None):
-                    q.put(('knap', desc, taken, cur_val, left))
-                def process_queue():
-                    try:
-                        while True:
-                            typ, desc, taken, cur_val, left = q.get_nowait()
-                            if not self.knap_log.winfo_exists():
-                                return
-                            self.knap_log.insert(tk.END, desc + "\n")
-                            self.knap_log.see(tk.END)
-                            self.knap_canvas.update_state(taken, cap-left, cur_val)
-                            self.root.update()
-                            delay = self.speed_var.get() if self.step_mode.get() else 0
-                            if delay>0: time.sleep(delay)
-                            q.task_done()
-                    except queue.Empty:
-                        pass
-                    finally:
-                        if self.knap_log.winfo_exists():
-                            self.safe_after(50, process_queue)
-                process_queue()
-                algo = self.algo_var.get()
-                if algo == "greedy": solver.greedy(callback)
-                elif algo == "brute": solver.brute_force(callback)
-                elif algo == "dp": solver.dp(callback)
-                elif algo == "bnb": solver.branch_and_bound(callback)
-                else: solver.simulated_annealing(callback)
-                if solver.stopped:
-                    self.status_var.set("Остановлено")
-                else:
-                    self.status_var.set("Алгоритм рюкзака завершён")
-                if not self.loop_active or solver.stopped:
-                    break
-                time.sleep(0.5)
-            self.root.after(0, lambda: self.run_btn.config(state=tk.NORMAL))
-            self.root.after(0, lambda: self.stop_btn.config(state=tk.DISABLED))
-            self.current_solver = None
-        threading.Thread(target=worker, daemon=True).start()
 
     def parse_graph(self):
         lines = self.graph_text.get("1.0", tk.END).strip().splitlines()
@@ -600,9 +348,6 @@ class AlgoStepApp:
                 raise ValueError("Вершины и вес должны быть целыми числами")
         self.graph_text.config(bg='#ffffff')
         n = max_v+1 if max_v>=0 else 1
-        if self.path_algo.get() == "brute" and n > 8:
-            if not messagebox.askyesno("Предупреждение", f"Полный перебор для {n} вершин может работать очень долго. Продолжить?"):
-                raise ValueError("Отменено пользователем")
         return graph, self.start_var.get(), self.target_var.get(), n
 
     def run_path(self):
@@ -664,6 +409,110 @@ class AlgoStepApp:
             self.current_solver = None
         threading.Thread(target=worker, daemon=True).start()
 
+    # ==================== СОРТИРОВКА (ИСПРАВЛЕННАЯ) ====================
+    def setup_sorting(self):
+        main_panel = ttk.Frame(self.sort_frame)
+        main_panel.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        left = ttk.Frame(main_panel)
+        left.pack(side=tk.LEFT, fill=tk.BOTH, expand=False, padx=5)
+
+        top_left = ttk.Frame(left)
+        top_left.pack(fill=tk.X)
+        ttk.Button(top_left, text="🎲 Случайный массив", command=self.random_array).pack(side=tk.LEFT, padx=5)
+        ttk.Button(top_left, text="❓", width=3, command=lambda: self.show_info("Сортировка",
+            "Сортировка – упорядочивание элементов по возрастанию.\n\n"
+            "Алгоритмы:\n• Пузырьковая\n• Выбором\n• Вставками\n• Быстрая\n• Слиянием\n• Подсчётом\n\n"
+            "Подсветка: красный и оранжевый – сравниваемые элементы.")).pack(side=tk.LEFT, padx=5)
+        ttk.Button(top_left, text="⟳ Сброс к исходному", command=self.reset_sorting).pack(side=tk.LEFT, padx=5)
+
+        ttk.Label(left, text="Исходный массив (числа через пробел):").pack(anchor=tk.W)
+        self.sort_array_text = tk.Text(left, height=4, width=30, bg='#ffffff', fg='black', font=('Consolas',9))
+        self.sort_array_text.pack(pady=5)
+        self.sort_array_text.insert(tk.END, "64 25 12 22 11 90 5 33")
+        self.sort_array_text.bind("<FocusIn>", lambda e: self.sort_array_text.config(bg='#ffffff'))
+        self.original_array = [64, 25, 12, 22, 11, 90, 5, 33]
+
+        algo_frame = ttk.LabelFrame(left, text="Алгоритм сортировки")
+        algo_frame.pack(fill=tk.X, pady=5)
+        self.sort_algo = tk.StringVar(value="bubble")
+        algorithms = [("Пузырьковая", "bubble"), ("Выбором", "selection"), ("Вставками", "insertion"),
+                      ("Быстрая", "quick"), ("Слиянием", "merge"), ("Подсчётом", "counting")]
+        for text, val in algorithms:
+            ttk.Radiobutton(algo_frame, text=text, variable=self.sort_algo, value=val).pack(anchor=tk.W, padx=5, pady=1)
+
+        self.sort_step_mode = tk.BooleanVar(value=True)
+        ttk.Checkbutton(left, text="Пошаговый режим", variable=self.sort_step_mode).pack(anchor=tk.W, pady=5)
+        self.sort_animate = tk.BooleanVar(value=False)
+        ttk.Checkbutton(left, text="Плавная анимация обмена", variable=self.sort_animate).pack(anchor=tk.W, pady=2)
+        speed_frame = ttk.Frame(left)
+        speed_frame.pack(fill=tk.X, pady=5)
+        ttk.Label(speed_frame, text="Скорость:").pack(side=tk.LEFT)
+        self.sort_speed_scale = ttk.Scale(speed_frame, from_=0.05, to=1.0, variable=self.speed_var, orient=tk.HORIZONTAL)
+        self.sort_speed_scale.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        self.sort_loop_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(left, text="Циклический повтор", variable=self.sort_loop_var).pack(anchor=tk.W, pady=5)
+
+        btn_frame = ttk.Frame(left)
+        btn_frame.pack(pady=10)
+        self.run_sort_btn = ttk.Button(btn_frame, text="▶ ЗАПУСТИТЬ", command=self.run_sorting)
+        self.run_sort_btn.pack(side=tk.LEFT, padx=5)
+        self.stop_sort_btn = ttk.Button(btn_frame, text="⏹ СТОП", command=self.stop_algorithm, state=tk.DISABLED)
+        self.stop_sort_btn.pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="🗑 Очистить лог", command=lambda: self.sort_log.delete(1.0, tk.END)).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="💾 Сохранить лог", command=lambda: self.save_log(self.sort_log.get(1.0, tk.END))).pack(side=tk.LEFT, padx=5)
+
+        right = ttk.Frame(main_panel)
+        right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        self.sort_canvas = SortingCanvas(right, width=600, height=300)
+        self.sort_canvas.pack(fill=tk.BOTH, expand=True, pady=5)
+        self.sort_log = tk.Text(right, height=6, bg='#ffffff', fg='black', font=('Segoe UI',9))
+        self.sort_log.pack(fill=tk.BOTH, expand=True)
+
+        code_frame = ttk.LabelFrame(right, text="Исходный код (C++)")
+        code_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+        self.sort_code = tk.Text(code_frame, wrap=tk.WORD, font=('Courier', 10), bg='#1e1e1e')
+        self.sort_code.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.update_sort_code()
+        self.sort_algo.trace_add('write', lambda *args: self.update_sort_code())
+        self.reset_sorting()
+
+    def random_array(self):
+        arr = [random.randint(5, 99) for _ in range(10)]
+        self.sort_array_text.delete(1.0, tk.END)
+        self.sort_array_text.insert(tk.END, ' '.join(map(str, arr)))
+        self.original_array = arr[:]
+        self.sort_canvas.set_data(arr)
+        self.status_var.set("Сгенерирован случайный массив")
+
+    def reset_sorting(self):
+        text = self.sort_array_text.get("1.0", tk.END).strip()
+        try:
+            arr = list(map(int, text.split()))
+        except:
+            self.status_var.set("Ошибка: массив должен содержать только целые числа")
+            return
+        self.original_array = arr[:]
+        self.sort_canvas.set_data(arr)
+        self.status_var.set("Сброс к исходному массиву")
+
+    def update_sort_code(self):
+        algo = self.sort_algo.get()
+        code = CodeLoader.get_sort_code(algo)
+        self.colorize_code(self.sort_code, code)
+
+    def colorize_code(self, text_widget, raw_code):
+        text_widget.config(state=tk.NORMAL)
+        text_widget.delete(1.0, tk.END)
+        lines = raw_code.split('\n')
+        for line in lines:
+            if line.strip().startswith('//'):
+                text_widget.insert(tk.END, line + '\n', 'comment')
+            else:
+                text_widget.insert(tk.END, line + '\n', 'code')
+        text_widget.tag_config('comment', foreground='#6a9955', font=('Courier', 10, 'italic'))
+        text_widget.tag_config('code', foreground='#d4d4d4', font=('Courier', 10))
+        text_widget.config(state=tk.DISABLED)
+
     def run_sorting(self):
         text = self.sort_array_text.get("1.0", tk.END).strip()
         try:
@@ -676,12 +525,12 @@ class AlgoStepApp:
         if not arr:
             self.status_var.set("Пустой массив")
             return
-        # Сохраняем исходный массив для сброса
-        self.original_sort_array = arr[:]
+
         self.run_sort_btn.config(state=tk.DISABLED)
         self.stop_sort_btn.config(state=tk.NORMAL)
         self.loop_active = self.sort_loop_var.get()
-        self.sort_canvas.set_animation(False)
+        self.sort_canvas.set_animation(self.sort_animate.get())
+
         def worker():
             while True:
                 if self.current_solver:
@@ -693,21 +542,21 @@ class AlgoStepApp:
                 self.sort_canvas.set_data(arr)
                 self.status_var.set("Сортировка...")
                 q = queue.Queue()
+
                 def callback(current_arr, desc, idx1, idx2):
                     q.put(('sort', current_arr, desc, idx1, idx2))
+
                 def process_queue():
                     try:
                         while True:
                             typ, cur_arr, desc, i1, i2 = q.get_nowait()
-                            if not self.sort_log.winfo_exists():
+                            if self.closing or not self.sort_log.winfo_exists():
                                 return
                             self.sort_log.insert(tk.END, desc + "\n")
                             self.sort_log.see(tk.END)
-                            # Мгновенное обновление визуализации
-                            if i1 != -1 and i2 != -1:
-                                # Обмен в canvas
-                                self.sort_canvas.values = cur_arr[:]
-                                self.sort_canvas.draw(highlight_indices=(i1, i2))
+                            # Мгновенное обновление или анимация
+                            if i1 != -1 and i2 != -1 and self.sort_animate.get():
+                                self.sort_canvas.animate_swap(i1, i2, callback=None)
                             else:
                                 self.sort_canvas.update_state(cur_arr, i1, i2 if i2 != -1 else None)
                             self.root.update()
@@ -717,9 +566,12 @@ class AlgoStepApp:
                             q.task_done()
                     except queue.Empty:
                         pass
+                    except tk.TclError:
+                        return
                     finally:
-                        if self.sort_log.winfo_exists():
-                            self.safe_after(50, process_queue)
+                        if not self.closing and self.sort_log.winfo_exists():
+                            self.safe_after(30, process_queue)
+
                 process_queue()
                 algo = self.sort_algo.get()
                 if algo == "bubble": solver.bubble_sort(callback)
@@ -728,6 +580,7 @@ class AlgoStepApp:
                 elif algo == "quick": solver.quick_sort(callback)
                 elif algo == "merge": solver.merge_sort(callback)
                 else: solver.counting_sort(callback)
+
                 if solver.stopped:
                     self.status_var.set("Сортировка остановлена")
                 else:
@@ -738,7 +591,70 @@ class AlgoStepApp:
             self.root.after(0, lambda: self.run_sort_btn.config(state=tk.NORMAL))
             self.root.after(0, lambda: self.stop_sort_btn.config(state=tk.DISABLED))
             self.current_solver = None
+
         threading.Thread(target=worker, daemon=True).start()
+
+    # ==================== ТЕСТИРОВАНИЕ ====================
+    def setup_testing(self):
+        main = ttk.Frame(self.test_frame)
+        main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        ttk.Label(main, text="Автоматическое тестирование алгоритмов", font=('Segoe UI',12)).pack(anchor=tk.W)
+        btn_frame = ttk.Frame(main)
+        btn_frame.pack(fill=tk.X, pady=5)
+        ttk.Button(btn_frame, text="Тестировать рюкзак", command=self.test_knapsack).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Тестировать граф", command=self.test_graph).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Тестировать сортировку", command=self.test_sorting).pack(side=tk.LEFT, padx=5)
+        self.test_output = tk.Text(main, height=20, bg='#ffffff', fg='black', font=('Consolas',10))
+        self.test_output.pack(fill=tk.BOTH, expand=True, pady=10)
+        scroll = ttk.Scrollbar(main, command=self.test_output.yview)
+        self.test_output.configure(yscrollcommand=scroll.set)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+    def test_knapsack(self):
+        self.test_output.delete(1.0, tk.END)
+        self.test_output.insert(tk.END, "Тестирование рюкзака (заглушка)\n")
+
+    def test_graph(self):
+        self.test_output.delete(1.0, tk.END)
+        self.test_output.insert(tk.END, "Тестирование графа (заглушка)\n")
+
+    def test_sorting(self):
+        self.test_output.delete(1.0, tk.END)
+        self.test_output.insert(tk.END, "Тестирование сортировки (заглушка)\n")
+
+    # ==================== ОБЩИЕ МЕТОДЫ ====================
+    def stop_algorithm(self):
+        if self.current_solver:
+            self.current_solver.stop()
+        self.status_var.set("Остановка...")
+        self.run_btn.config(state=tk.NORMAL)
+        self.stop_btn.config(state=tk.DISABLED)
+        self.run_path_btn.config(state=tk.NORMAL)
+        self.stop_path_btn.config(state=tk.DISABLED)
+        self.run_sort_btn.config(state=tk.NORMAL)
+        self.stop_sort_btn.config(state=tk.DISABLED)
+
+    def show_info(self, title, text):
+        info_win = tk.Toplevel(self.root)
+        info_win.title(title)
+        info_win.geometry("600x500")
+        text_widget = tk.Text(info_win, wrap=tk.WORD, bg='#ffffe0', fg='black', font=('Segoe UI',10))
+        text_widget.insert(tk.END, text)
+        text_widget.config(state=tk.DISABLED)
+        scroll = ttk.Scrollbar(info_win, command=text_widget.yview)
+        text_widget.configure(yscrollcommand=scroll.set)
+        text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+    def save_log(self, log_text):
+        if not log_text.strip():
+            messagebox.showwarning("Нет данных", "Лог пуст, нечего сохранять.")
+            return
+        file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        if file_path:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(log_text)
+            self.status_var.set(f"Лог сохранён: {os.path.basename(file_path)}")
 
 if __name__ == "__main__":
     root = tk.Tk()
