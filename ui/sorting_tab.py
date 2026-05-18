@@ -122,6 +122,9 @@ class SortingTab(QWidget):
     def highlight_code_line(self, line_num):
         if line_num < 1:
             return
+        # Сохраняем позицию прокрутки
+        scrollbar = self.code_edit.verticalScrollBar()
+        scroll_pos = scrollbar.value()
         self.clear_code_highlight()
         cursor = self.code_edit.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.Start)
@@ -133,7 +136,8 @@ class SortingTab(QWidget):
         fmt.setForeground(QColor(0, 0, 0))
         cursor.setCharFormat(fmt)
         self.code_edit.setTextCursor(cursor)
-        self.code_edit.ensureCursorVisible()
+        # Восстанавливаем прокрутку
+        scrollbar.setValue(scroll_pos)
 
     def random_array(self):
         arr = [random.randint(5, 99) for _ in range(10)]
