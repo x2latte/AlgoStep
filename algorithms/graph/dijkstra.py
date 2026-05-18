@@ -3,35 +3,33 @@ from .solver import GraphSolver
 from typing import Iterator, List, Tuple, Optional
 
 class Dijkstra(GraphSolver):
-    def run(self) -> Iterator[Tuple[str, int, int, List[int], List[int], Optional[Tuple[int,int]]]]:
+    def run(self) -> Iterator[Tuple[str, int, int, List[int], List[int], Optional[Tuple[int,int]], int]]:
         INF = 10**9
         dist = [INF] * self.n
         prev = [-1] * self.n
         dist[self.source] = 0
         pq = [(0, self.source)]
         visited = [False] * self.n
-        yield f"Начало алгоритма Дейкстры из вершины {self.source}", self.source, 0, dist[:], [], None
+        yield f"Начало Дейкстры из {self.source}", self.source, 0, dist[:], [], None, 1
         while pq:
             if self.stopped: break
             d, u = heapq.heappop(pq)
             if visited[u]:
                 continue
             visited[u] = True
-            yield f"Выбрана вершина {u} с расстоянием {d}", u, d, dist[:], [], None
-            if u == self.target:
-                break
+            yield f"Выбрана вершина {u}, расстояние {d}", u, d, dist[:], [], None, 3
+            if u == self.target: break
             for v, w in self.graph.get(u, []):
                 if self.stopped: break
                 if dist[u] + w < dist[v]:
                     dist[v] = dist[u] + w
                     prev[v] = u
                     heapq.heappush(pq, (dist[v], v))
-                    yield f"Релаксация ребра {u}→{v}, новое расстояние {dist[v]}", v, dist[v], dist[:], [], (u, v)
-        # Восстановление пути
+                    yield f"Релаксация {u}→{v}, новое расстояние {dist[v]}", v, dist[v], dist[:], [], (u, v), 6
         path = []
         cur = self.target
         while cur != -1:
             path.append(cur)
             cur = prev[cur]
         path.reverse()
-        yield f"Путь найден: {' → '.join(map(str, path))}, длина = {dist[self.target]}", -1, dist[self.target], dist[:], path, None
+        yield f"Путь: {' → '.join(map(str, path))}, длина = {dist[self.target]}", -1, dist[self.target], dist[:], path, None, 10

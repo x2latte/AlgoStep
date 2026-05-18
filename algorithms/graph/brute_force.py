@@ -2,29 +2,29 @@ from .solver import GraphSolver
 from typing import Iterator, List, Tuple, Optional
 
 class BruteForceGraph(GraphSolver):
-    def run(self) -> Iterator[Tuple[str, int, int, List[int], List[int], Optional[Tuple[int,int]]]]:
+    def run(self) -> Iterator[Tuple[str, int, int, List[int], List[int], Optional[Tuple[int,int]], int]]:
         INF = 10**9
         self.best_dist = INF
         self.best_path = []
         visited = [False] * self.n
         cur_path = []
-
+        yield f"Начало полного перебора", self.source, 0, [], [], None, 1
         def dfs(v, cur_dist):
             if self.stopped: return
             visited[v] = True
             cur_path.append(v)
-            yield f"Посещаем вершину {v}, текущий путь: {cur_path}, расстояние = {cur_dist}", v, cur_dist, [], cur_path[:], None
+            yield f"Посещаем {v}, путь {cur_path}, расстояние {cur_dist}", v, cur_dist, [], cur_path[:], None, 3
             if v == self.target:
                 if cur_dist < self.best_dist:
                     self.best_dist = cur_dist
                     self.best_path = cur_path[:]
-                    yield f"Найден новый лучший путь: {self.best_path}, длина = {self.best_dist}", v, cur_dist, [], self.best_path, None
+                    yield f"Новый лучший путь: {self.best_path}, длина {self.best_dist}", v, cur_dist, [], self.best_path, None, 2
             else:
                 for to, w in self.graph.get(v, []):
                     if not visited[to]:
                         yield from dfs(to, cur_dist + w)
             visited[v] = False
             cur_path.pop()
-
+            yield f"Возврат из {v}", v, cur_dist, [], cur_path[:], None, 4
         yield from dfs(self.source, 0)
-        yield f"Поиск завершён. Кратчайший путь: {self.best_path}, длина = {self.best_dist}", -1, self.best_dist, [], self.best_path, None
+        yield f"Завершён. Кратчайший путь: {self.best_path}, длина {self.best_dist}", -1, self.best_dist, [], self.best_path, None, 6

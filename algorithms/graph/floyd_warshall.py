@@ -2,7 +2,7 @@ from .solver import GraphSolver
 from typing import Iterator, List, Tuple, Optional
 
 class FloydWarshall(GraphSolver):
-    def run(self) -> Iterator[Tuple[str, int, int, List[int], List[int], Optional[Tuple[int,int]]]]:
+    def run(self) -> Iterator[Tuple[str, int, int, List[int], List[int], Optional[Tuple[int,int]], int]]:
         INF = 10**9
         dist = [[INF] * self.n for _ in range(self.n)]
         nxt = [[-1] * self.n for _ in range(self.n)]
@@ -12,7 +12,7 @@ class FloydWarshall(GraphSolver):
             for v, w in self.graph[u]:
                 dist[u][v] = w
                 nxt[u][v] = v
-        yield f"Начало алгоритма Флойда-Уоршелла, граф из {self.n} вершин", -1, -1, [], [], None
+        yield f"Начало Флойда-Уоршелла", -1, -1, [], [], None, 1
         for k in range(self.n):
             if self.stopped: break
             for i in range(self.n):
@@ -20,9 +20,9 @@ class FloydWarshall(GraphSolver):
                     if dist[i][k] != INF and dist[k][j] != INF and dist[i][k] + dist[k][j] < dist[i][j]:
                         dist[i][j] = dist[i][k] + dist[k][j]
                         nxt[i][j] = nxt[i][k]
-            yield f"Итерация {k+1}/{self.n} завершена", -1, -1, [], [], None
+            yield f"Итерация {k+1}/{self.n}", -1, -1, [], [], None, 2
         if dist[self.source][self.target] == INF:
-            yield f"Путь не существует", -1, -1, [], [], None
+            yield f"Путь не существует", -1, -1, [], [], None, 8
             return
         path = []
         cur = self.source
@@ -30,4 +30,4 @@ class FloydWarshall(GraphSolver):
             path.append(cur)
             cur = nxt[cur][self.target]
         path.append(self.target)
-        yield f"Путь найден: {' → '.join(map(str, path))}, длина = {dist[self.source][self.target]}", -1, dist[self.source][self.target], [], path, None
+        yield f"Путь: {' → '.join(map(str, path))}, длина = {dist[self.source][self.target]}", -1, dist[self.source][self.target], [], path, None, 8

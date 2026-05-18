@@ -141,7 +141,7 @@ class KnapsackTab(QWidget):
         fmt.setForeground(QColor(0, 0, 0))
         cursor.setCharFormat(fmt)
         self.code_edit.setTextCursor(cursor)
-        self.code_edit.ensureCursorVisible()
+        # Без self.code_edit.ensureCursorVisible()
 
     def parse_items(self):
         from algorithms.knapsack.solver import Item
@@ -209,7 +209,6 @@ class KnapsackTab(QWidget):
             return
         try:
             result = next(self.current_generator)
-            # Ожидаем 5 элементов: msg, taken, cur_val, left, line_num
             if len(result) == 5:
                 msg, taken, cur_val, left, line_num = result
                 if line_num != -1:
