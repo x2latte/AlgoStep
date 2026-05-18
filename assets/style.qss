@@ -1,0 +1,26 @@
+/* Основные стили для приложения */
+QMainWindow {
+    background-color: #f0f4f8;
+}
+QTabWidget::pane {
+    border: 1px solid #c0c0c0;
+    background-color: white;
+}
+QTabBar::tab {
+    background-color: #e0e7f0;
+    padding: 8px 16px;
+    font-family: Segoe UI;
+    font-size: 11pt;
+}
+QTabBar::tab:selected {
+    background-color: white;
+}
+QPushButton {
+    padding: 6px 12px;
+    font-family: Segoe UI;
+    font-size: 10pt;
+}
+QTextEdit {
+    font-family: Consolas;
+    font-size: 9pt;
+}

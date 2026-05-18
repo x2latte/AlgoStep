@@ -1,4 +1,3 @@
-// Динамическое программирование для задачи о рюкзаке
 int dpKnapsack(Item items[], int n, int capacity) {
     vector<vector<int>> dp(n+1, vector<int>(capacity+1, 0));
     for (int i = 1; i <= n; i++) {

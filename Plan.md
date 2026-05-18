@@ -88,18 +88,52 @@
    - В. Таблицы сравнения алгоритмов (для разных размеров входных данных).
 
 
-AlgoStep/
-├── main.py                 # точка входа (минимальный)
-├── app.py                  # главное окно и логика GUI
+AlgoStep_Qt/
+├── main.py
+├── requirements.txt
+├── README.md
 ├── algorithms/
 │   ├── __init__.py
-│   ├── knapsack.py         # алгоритмы рюкзака
-│   └── shortest_path.py    # алгоритмы графа
-├── viz/
+│   ├── knapsack/
+│   │   ├── __init__.py
+│   │   ├── greedy.py
+│   │   ├── dp.py
+│   │   ├── brute_force.py
+│   │   ├── backtracking.py
+│   │   ├── branch_and_bound.py
+│   │   └── solver.py
+│   ├── graph/
+│   │   ├── __init__.py
+│   │   ├── dijkstra.py
+│   │   ├── bellman_ford.py
+│   │   ├── brute_force.py
+│   │   ├── a_star.py
+│   │   ├── floyd_warshall.py
+│   │   └── solver.py
+│   └── sorting/
+│       ├── __init__.py
+│       ├── bubble.py
+│       ├── selection.py
+│       ├── insertion.py
+│       ├── quick.py
+│       ├── merge.py
+│       ├── counting.py
+│       └── solver.py
+├── ui/
 │   ├── __init__.py
-│   ├── knapsack_viz.py     # рисование рюкзака
-│   └── graph_viz.py        # рисование графа
-└── utils.py                # вспомогательные функции
-
-
-### Добавить коды на с++ к каждому алгосу
+│   ├── main_window.py
+│   ├── sorting_tab.py
+│   ├── graph_tab.py
+│   ├── knapsack_tab.py
+│   └── testing_tab.py
+├── visualizers/
+│   ├── __init__.py
+│   ├── sorting_visualizer.py
+│   ├── graph_visualizer.py
+│   └── knapsack_visualizer.py
+├── utils/
+│   ├── __init__.py
+│   ├── code_highlighter.py
+│   └── logger.py
+└── assets/
+    └── style.qss
