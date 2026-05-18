@@ -1,3 +1,4 @@
+// Жадный алгоритм для задачи о рюкзаке
 struct Item {
     int weight;
     int value;
@@ -10,7 +11,7 @@ bool compare(Item a, Item b) {
     return r1 > r2;
 }
 
-void greedyKnapsack(Item items[], int n, int capacity) {
+int greedyKnapsack(Item items[], int n, int capacity) {
     sort(items, items + n, compare);
     int currentWeight = 0;
     int totalValue = 0;
@@ -18,7 +19,7 @@ void greedyKnapsack(Item items[], int n, int capacity) {
         if (currentWeight + items[i].weight <= capacity) {
             currentWeight += items[i].weight;
             totalValue += items[i].value;
-            // Берём предмет items[i]
         }
     }
+    return totalValue;
 }
