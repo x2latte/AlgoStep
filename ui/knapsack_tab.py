@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                              QTextEdit, QComboBox, QCheckBox, QSlider, QLabel,
                              QSpinBox)
 from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QTextCursor, QTextCharFormat, QColor
 from visualizers.knapsack_visualizer import KnapsackVisualizer
 from algorithms.knapsack import (GreedyKnapsack, DPKnapsack, BruteForceKnapsack,
                                  BacktrackingKnapsack, BranchAndBoundKnapsack)
@@ -114,6 +115,33 @@ class KnapsackTab(QWidget):
         except:
             code = f"// Код для {algo_name} не найден"
         self.code_edit.setPlainText(code)
+        self.clear_code_highlight()
+
+    def clear_code_highlight(self):
+        cursor = self.code_edit.textCursor()
+        cursor.select(QTextCursor.SelectionType.Document)
+        fmt = QTextCharFormat()
+        fmt.setBackground(QColor("#1e1e1e"))
+        fmt.setForeground(QColor("#d4d4d4"))
+        cursor.setCharFormat(fmt)
+        cursor.clearSelection()
+        self.code_edit.setTextCursor(cursor)
+
+    def highlight_code_line(self, line_num):
+        if line_num < 1:
+            return
+        self.clear_code_highlight()
+        cursor = self.code_edit.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.Start)
+        for _ in range(line_num - 1):
+            cursor.movePosition(QTextCursor.MoveOperation.NextBlock)
+        cursor.select(QTextCursor.SelectionType.LineUnderCursor)
+        fmt = QTextCharFormat()
+        fmt.setBackground(QColor(255, 255, 0, 120))
+        fmt.setForeground(QColor(0, 0, 0))
+        cursor.setCharFormat(fmt)
+        self.code_edit.setTextCursor(cursor)
+        self.code_edit.ensureCursorVisible()
 
     def parse_items(self):
         from algorithms.knapsack.solver import Item
@@ -153,6 +181,7 @@ class KnapsackTab(QWidget):
             items, cap = self.parse_items()
             self.visualizer.set_problem(items, cap)
             self.log_text.clear()
+            self.clear_code_highlight()
         except Exception as e:
             self.log_text.append(f"Ошибка: {e}")
 
@@ -179,7 +208,14 @@ class KnapsackTab(QWidget):
         if self.current_generator is None:
             return
         try:
-            msg, taken, cur_val, left = next(self.current_generator)
+            result = next(self.current_generator)
+            # Ожидаем 5 элементов: msg, taken, cur_val, left, line_num
+            if len(result) == 5:
+                msg, taken, cur_val, left, line_num = result
+                if line_num != -1:
+                    self.highlight_code_line(line_num)
+            else:
+                msg, taken, cur_val, left = result
             self.log_text.append(msg)
             self.log_text.ensureCursorVisible()
             self.visualizer.update_state(taken, cur_val, left)

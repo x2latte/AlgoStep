@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                              QTextEdit, QComboBox, QCheckBox, QSlider, QLabel)
 from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QTextCursor, QTextCharFormat, QColor
 from visualizers.sorting_visualizer import SortingVisualizer
 from algorithms.sorting import (BubbleSort, SelectionSort, InsertionSort,
                                 QuickSort, MergeSort, CountingSort)
@@ -24,6 +25,7 @@ class SortingTab(QWidget):
         self.step_timer.timeout.connect(self.next_step)
         self.init_ui()
         self.reset_array()
+        self.update_code()
 
     def init_ui(self):
         main_layout = QHBoxLayout()
@@ -46,7 +48,7 @@ class SortingTab(QWidget):
 
         left_layout.addWidget(QLabel("Алгоритм:"))
         self.algo_combo = QComboBox()
-        self.algo_combo.addItems(list(self.algorithms.keys()))
+        self.algo_combo.addItems(self.algorithms.keys())
         self.algo_combo.currentTextChanged.connect(self.update_code)
         left_layout.addWidget(self.algo_combo)
 
@@ -92,7 +94,6 @@ class SortingTab(QWidget):
         main_layout.addWidget(left_panel, 1)
         main_layout.addWidget(right_panel, 2)
         self.setLayout(main_layout)
-        self.update_code()
 
     def update_code(self):
         algo_name = self.algo_combo.currentText()
@@ -106,6 +107,33 @@ class SortingTab(QWidget):
         except:
             code = f"// Код для {algo_name} не найден"
         self.code_edit.setPlainText(code)
+        self.clear_code_highlight()
+
+    def clear_code_highlight(self):
+        cursor = self.code_edit.textCursor()
+        cursor.select(QTextCursor.SelectionType.Document)
+        fmt = QTextCharFormat()
+        fmt.setBackground(QColor("#1e1e1e"))
+        fmt.setForeground(QColor("#d4d4d4"))
+        cursor.setCharFormat(fmt)
+        cursor.clearSelection()
+        self.code_edit.setTextCursor(cursor)
+
+    def highlight_code_line(self, line_num):
+        if line_num < 1:
+            return
+        self.clear_code_highlight()
+        cursor = self.code_edit.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.Start)
+        for _ in range(line_num - 1):
+            cursor.movePosition(QTextCursor.MoveOperation.NextBlock)
+        cursor.select(QTextCursor.SelectionType.LineUnderCursor)
+        fmt = QTextCharFormat()
+        fmt.setBackground(QColor(255, 255, 0, 120))
+        fmt.setForeground(QColor(0, 0, 0))
+        cursor.setCharFormat(fmt)
+        self.code_edit.setTextCursor(cursor)
+        self.code_edit.ensureCursorVisible()
 
     def random_array(self):
         arr = [random.randint(5, 99) for _ in range(10)]
@@ -119,6 +147,7 @@ class SortingTab(QWidget):
             self.visualizer.set_array(arr)
             self.log_text.clear()
             self.current_array = arr
+            self.clear_code_highlight()
         except:
             self.log_text.append("Ошибка: введите целые числа через пробел")
 
@@ -146,7 +175,13 @@ class SortingTab(QWidget):
         if self.current_generator is None:
             return
         try:
-            new_arr, msg, idx1, idx2 = next(self.current_generator)
+            result = next(self.current_generator)
+            if len(result) == 5:
+                new_arr, msg, idx1, idx2, line_num = result
+                if line_num != -1:
+                    self.highlight_code_line(line_num)
+            else:
+                new_arr, msg, idx1, idx2 = result
             self.visualizer.set_array(new_arr)
             self.visualizer.set_highlight(idx1, idx2)
             self.log_text.append(msg)
