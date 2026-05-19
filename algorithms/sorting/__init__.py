@@ -1,3 +1,4 @@
+from .solver import SortingSolver
 from .bubble import BubbleSort
 from .selection import SelectionSort
 from .insertion import InsertionSort

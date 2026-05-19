@@ -223,13 +223,14 @@ class GraphTab(QWidget):
             return
         try:
             result = next(self.current_generator)
-            # Ожидаем 7 элементов: msg, vertex, dist, dist_list, path, edge, line_num
             if len(result) == 7:
                 msg, vertex, dist, dist_list, path, edge, line_num = result
+                if line_num == -1 and "Ошибка" in msg:
+                    from PyQt6.QtWidgets import QMessageBox
+                    QMessageBox.critical(self, "Ошибка алгоритма", msg)
                 if line_num != -1:
                     self.highlight_code_line(line_num)
             else:
-                # fallback для старых версий (без line_num)
                 msg, vertex, dist, dist_list, path, edge = result
             self.log_text.append(msg)
             self.log_text.ensureCursorVisible()

@@ -409,7 +409,7 @@ class AlgoStepApp:
             self.current_solver = None
         threading.Thread(target=worker, daemon=True).start()
 
-    # ==================== СОРТИРОВКА (ИСПРАВЛЕННАЯ) ====================
+    # ==================== СОРТИРОВКА ====================
     def setup_sorting(self):
         main_panel = ttk.Frame(self.sort_frame)
         main_panel.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -612,15 +612,99 @@ class AlgoStepApp:
 
     def test_knapsack(self):
         self.test_output.delete(1.0, tk.END)
-        self.test_output.insert(tk.END, "Тестирование рюкзака (заглушка)\n")
+        self.test_output.insert(tk.END, "Тестирование алгоритмов рюкзака\n" + "="*50 + "\n")
+        from algorithms.knapsack.solver import Item
+        test_cases = [
+            ([Item("A",2,3), Item("B",3,4), Item("C",4,5)], 5, "Обычный тест"),
+            ([Item("A",1,1), Item("B",2,2), Item("C",3,3), Item("D",4,4)], 5, "Много предметов"),
+            ([Item("A",5,10), Item("B",3,7), Item("C",2,4)], 8, "Разные веса"),
+            ([Item("A",3,6), Item("B",4,8), Item("C",2,5), Item("D",5,9)], 9, "Граничный тест"),
+        ]
+        for items, cap, desc in test_cases:
+            self.test_output.insert(tk.END, f"\n{desc}: вместимость={cap}, предметов={len(items)}\n")
+            solver = KnapsackSolver(items, cap)
+            results = {}
+            for name, algo in [("Жадный", solver.greedy), ("Полный перебор", solver.brute_force),
+                               ("DP", solver.dp), ("Ветви и границы", solver.branch_and_bound),
+                               ("Отжиг", solver.simulated_annealing)]:
+                start = time.time()
+                val, _ = algo(lambda *args: None)
+                elapsed = time.time() - start
+                results[name] = (val, elapsed)
+            for name, (val, t) in results.items():
+                self.test_output.insert(tk.END, f"  {name:15}: ценность={val:3}, время={t:.5f} сек\n")
+        self.test_output.insert(tk.END, "\nТестирование завершено.\n")
 
     def test_graph(self):
         self.test_output.delete(1.0, tk.END)
-        self.test_output.insert(tk.END, "Тестирование графа (заглушка)\n")
+        self.test_output.insert(tk.END, "Тестирование алгоритмов поиска пути\n" + "="*50 + "\n")
+        from algorithms.shortest_path import ShortestPathSolver
+        
+        test_cases = [
+            ({0:[(1,2),(2,4)], 1:[(2,1),(3,7)], 2:[(4,3)], 3:[(4,1)]}, 0, 4, 5, "Обычный граф"),
+            ({0:[(1,1)], 1:[(2,1)], 2:[(3,1)], 3:[]}, 0, 3, 4, "Линейный граф"),
+            ({0:[(1,5)], 1:[(2,3)], 2:[(3,2)], 3:[]}, 0, 3, 4, "Разные веса"),
+        ]
+        
+        for graph, src, tgt, n, desc in test_cases:
+            self.test_output.insert(tk.END, f"\n{desc}: вершин={n}, старт={src}, цель={tgt}\n")
+            results = {}
+            negative_exists = any(w < 0 for u in graph for v,w in graph[u])
+            for name, algo in [("Дейкстра", lambda s: s.dijkstra), ("Полный перебор", lambda s: s.brute_force),
+                               ("Беллман-Форд", lambda s: s.bellman_ford), ("A*", lambda s: s.a_star),
+                               ("Флойд-Уоршелл", lambda s: s.floyd_warshall)]:
+                if name == "Дейкстра" and negative_exists:
+                    self.test_output.insert(tk.END, f"  {name:15}: пропущен (отрицательные веса)\n")
+                    continue
+                start = time.time()
+                solver = ShortestPathSolver(graph, src, tgt, n)
+                try:
+                    dist, _ = algo(solver)(lambda *args: None)
+                except Exception as e:
+                    dist = f"Ошибка: {e}"
+                elapsed = time.time() - start
+                results[name] = (dist, elapsed)
+            for name, (d, t) in results.items():
+                self.test_output.insert(tk.END, f"  {name:15}: расстояние={d:3}, время={t:.5f} сек\n")
+        
+        # Тест на отрицательные веса для Дейкстры
+        self.test_output.insert(tk.END, f"\nТест на отрицательные веса для Дейкстры:\n")
+        graph_negative = {0:[(1,-5), (2,2)], 1:[(2,1)], 2:[]}
+        solver = ShortestPathSolver(graph_negative, 0, 2, 3)
+        start = time.time()
+        try:
+            list(solver.dijkstra(lambda *args: None))
+            dist = "???"
+        except Exception as e:
+            dist = f"Ошибка (как и ожидалось): {str(e)[:50]}"
+        elapsed = time.time() - start
+        self.test_output.insert(tk.END, f"  Дейкстра с отриц. весом: {dist}, время={elapsed:.5f} сек\n")
+        self.test_output.insert(tk.END, "\nТестирование завершено.\n")
 
     def test_sorting(self):
         self.test_output.delete(1.0, tk.END)
-        self.test_output.insert(tk.END, "Тестирование сортировки (заглушка)\n")
+        self.test_output.insert(tk.END, "Тестирование алгоритмов сортировки\n" + "="*50 + "\n")
+        test_arrays = [
+            ([64, 25, 12, 22, 11, 90, 5, 33], "Случайный массив"),
+            ([3, 2, 1, 5, 4], "Почти отсортированный"),
+            ([1, 2, 3, 4, 5], "Уже отсортированный"),
+            ([5, 4, 3, 2, 1], "Обратный порядок"),
+            ([random.randint(1, 100) for _ in range(20)], "Большой массив (20)"),
+        ]
+        for arr, desc in test_arrays:
+            self.test_output.insert(tk.END, f"\n{desc}: длина {len(arr)}\nИсходный: {arr[:10]}{'...' if len(arr)>10 else ''}\n")
+            results = {}
+            for name, algo in [("Пузырьковая", "bubble_sort"), ("Выбором", "selection_sort"),
+                               ("Вставками", "insertion_sort"), ("Быстрая", "quick_sort"),
+                               ("Слиянием", "merge_sort"), ("Подсчётом", "counting_sort")]:
+                solver = SortingSolver(arr[:])
+                start = time.time()
+                getattr(solver, algo)(lambda *args: None)
+                elapsed = time.time() - start
+                results[name] = elapsed
+            for name, t in results.items():
+                self.test_output.insert(tk.END, f"  {name:15}: время={t:.5f} сек\n")
+        self.test_output.insert(tk.END, "\nТестирование завершено.\n")
 
     # ==================== ОБЩИЕ МЕТОДЫ ====================
     def stop_algorithm(self):

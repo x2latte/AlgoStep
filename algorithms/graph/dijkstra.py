@@ -4,6 +4,17 @@ from typing import Iterator, List, Tuple, Optional
 
 class Dijkstra(GraphSolver):
     def run(self) -> Iterator[Tuple[str, int, int, List[int], List[int], Optional[Tuple[int,int]], int]]:
+        # Проверка на отрицательные веса рёбер
+        negative_edges = []
+        for u in self.graph:
+            for v, w in self.graph[u]:
+                if w < 0:
+                    negative_edges.append((u, v, w))
+        if negative_edges:
+            msg = f"Ошибка: алгоритм Дейкстры не работает с отрицательными весами. Обнаружены рёбра: {negative_edges}"
+            yield msg, -1, -1, [], [], None, -1
+            return
+
         INF = 10**9
         dist = [INF] * self.n
         prev = [-1] * self.n
