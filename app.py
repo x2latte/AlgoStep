@@ -11,9 +11,9 @@ from code_loader import CodeLoader
 from algorithms.knapsack import Item, KnapsackSolver
 from algorithms.shortest_path import ShortestPathSolver
 from algorithms.sorting import SortingSolver
-# from viz.knapsack_viz import KnapsackCanvas
-# from viz.graph_viz import GraphCanvas
-# from viz.sorting_viz import SortingCanvas
+from viz.knapsack_viz import KnapsackCanvas
+from viz.graph_viz import GraphCanvas
+from viz.sorting_viz import SortingCanvas
 
 class AlgoStepApp:
     def __init__(self, root):
@@ -75,9 +75,9 @@ class AlgoStepApp:
         notebook.add(self.sort_frame, text="📊 Сортировка")
         self.setup_sorting()
 
-        self.test_frame = ttk.Frame(notebook)
-        notebook.add(self.test_frame, text="🧪 Тестирование")
-        self.setup_testing()
+#         self.test_frame = ttk.Frame(notebook)
+#         notebook.add(self.test_frame, text="🧪 Тестирование")
+#         self.setup_testing()
 
     # ==================== РЮКЗАК ====================
     def setup_knapsack(self):
@@ -134,7 +134,7 @@ class AlgoStepApp:
         right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         top_right = ttk.Frame(right)
         top_right.pack(fill=tk.BOTH, expand=True)
-        # self.knap_canvas = KnapsackCanvas(top_right, width=500, height=250)
+        self.knap_canvas = KnapsackCanvas(top_right, width=500, height=250)
         self.knap_canvas.pack(fill=tk.BOTH, expand=True, pady=5)
         self.knap_log = tk.Text(top_right, height=8, bg='#ffffff', fg='black', font=('Segoe UI',9))
         self.knap_log.pack(fill=tk.BOTH, expand=True)
@@ -299,7 +299,7 @@ class AlgoStepApp:
 
         right = ttk.Frame(main_panel)
         right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-        # self.graph_canvas = GraphCanvas(right, width=650, height=300)
+        self.graph_canvas = GraphCanvas(right, width=650, height=300)
         self.graph_canvas.pack(fill=tk.BOTH, expand=True, pady=5)
         self.path_log = tk.Text(right, height=6, bg='#ffffff', fg='black', font=('Segoe UI',9))
         self.path_log.pack(fill=tk.BOTH, expand=True)
@@ -463,7 +463,7 @@ class AlgoStepApp:
 
         right = ttk.Frame(main_panel)
         right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-        # self.sort_canvas = SortingCanvas(right, width=600, height=300)
+        self.sort_canvas = SortingCanvas(right, width=600, height=300)
         self.sort_canvas.pack(fill=tk.BOTH, expand=True, pady=5)
         self.sort_log = tk.Text(right, height=6, bg='#ffffff', fg='black', font=('Segoe UI',9))
         self.sort_log.pack(fill=tk.BOTH, expand=True)
@@ -594,191 +594,191 @@ class AlgoStepApp:
 
         threading.Thread(target=worker, daemon=True).start()
 
-    # ==================== ТЕСТИРОВАНИЕ ====================
-    def setup_testing(self):
-        main = ttk.Frame(self.test_frame)
-        main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        ttk.Label(main, text="Автоматическое тестирование алгоритмов", font=('Segoe UI',12)).pack(anchor=tk.W)
-        btn_frame = ttk.Frame(main)
-        btn_frame.pack(fill=tk.X, pady=5)
-        ttk.Button(btn_frame, text="Тестировать рюкзак", command=self.test_knapsack).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Тестировать граф", command=self.test_graph).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Тестировать сортировку", command=self.test_sorting).pack(side=tk.LEFT, padx=5)
-        self.test_output = tk.Text(main, height=20, bg='#ffffff', fg='black', font=('Consolas',10))
-        self.test_output.pack(fill=tk.BOTH, expand=True, pady=10)
-        scroll = ttk.Scrollbar(main, command=self.test_output.yview)
-        self.test_output.configure(yscrollcommand=scroll.set)
-        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+    # # ==================== ТЕСТИРОВАНИЕ ====================
+    # def setup_testing(self):
+    #     main = ttk.Frame(self.test_frame)
+    #     main.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    #     ttk.Label(main, text="Автоматическое тестирование алгоритмов", font=('Segoe UI',12)).pack(anchor=tk.W)
+    #     btn_frame = ttk.Frame(main)
+    #     btn_frame.pack(fill=tk.X, pady=5)
+    #     ttk.Button(btn_frame, text="Тестировать рюкзак", command=self.test_knapsack).pack(side=tk.LEFT, padx=5)
+    #     ttk.Button(btn_frame, text="Тестировать граф", command=self.test_graph).pack(side=tk.LEFT, padx=5)
+    #     ttk.Button(btn_frame, text="Тестировать сортировку", command=self.test_sorting).pack(side=tk.LEFT, padx=5)
+    #     self.test_output = tk.Text(main, height=20, bg='#ffffff', fg='black', font=('Consolas',10))
+    #     self.test_output.pack(fill=tk.BOTH, expand=True, pady=10)
+    #     scroll = ttk.Scrollbar(main, command=self.test_output.yview)
+    #     self.test_output.configure(yscrollcommand=scroll.set)
+    #     scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-    def test_knapsack(self):
-        self.test_output.delete(1.0, tk.END)
-        self.test_output.insert(tk.END, "Тестирование алгоритмов рюкзака (расширенные данные)\n" + "="*70 + "\n\n")
-        from algorithms.knapsack.solver import Item
-        import random
-        random.seed(42)
+    # def test_knapsack(self):
+    #     self.test_output.delete(1.0, tk.END)
+    #     self.test_output.insert(tk.END, "Тестирование алгоритмов рюкзака (расширенные данные)\n" + "="*70 + "\n\n")
+    #     from algorithms.knapsack.solver import Item
+    #     import random
+    #     random.seed(42)
         
-        # 10 предметов
-        items10 = [Item(f"Предмет{i}", random.randint(1,15), random.randint(5,30)) for i in range(10)]
-        cap10 = sum(i.weight for i in items10) // 2
-        # 15 предметов
-        items15 = [Item(f"Предмет{i}", random.randint(1,20), random.randint(10,50)) for i in range(15)]
-        cap15 = sum(i.weight for i in items15) // 2
-        # 20 предметов
-        items20 = [Item(f"Предмет{i}", random.randint(1,25), random.randint(15,70)) for i in range(20)]
-        cap20 = sum(i.weight for i in items20) // 2
+    #     # 10 предметов
+    #     items10 = [Item(f"Предмет{i}", random.randint(1,15), random.randint(5,30)) for i in range(10)]
+    #     cap10 = sum(i.weight for i in items10) // 2
+    #     # 15 предметов
+    #     items15 = [Item(f"Предмет{i}", random.randint(1,20), random.randint(10,50)) for i in range(15)]
+    #     cap15 = sum(i.weight for i in items15) // 2
+    #     # 20 предметов
+    #     items20 = [Item(f"Предмет{i}", random.randint(1,25), random.randint(15,70)) for i in range(20)]
+    #     cap20 = sum(i.weight for i in items20) // 2
         
-        test_cases = [
-            (items10, cap10, "10 предметов", 10),
-            (items15, cap15, "15 предметов", 15),
-            (items20, cap20, "20 предметов", 20),
-        ]
+    #     test_cases = [
+    #         (items10, cap10, "10 предметов", 10),
+    #         (items15, cap15, "15 предметов", 15),
+    #         (items20, cap20, "20 предметов", 20),
+    #     ]
         
-        for items, cap, desc, n in test_cases:
-            self.test_output.insert(tk.END, f"\n▶ {desc}, вместимость = {cap}\n")
-            self.test_output.insert(tk.END, f"   Предметы (первые 5 из {n}):\n")
-            for i, it in enumerate(items[:5]):
-                self.test_output.insert(tk.END, f"      {it.name}: вес={it.weight}, ценность={it.value}\n")
-            if n > 5:
-                self.test_output.insert(tk.END, f"      ... и ещё {n-5} предметов\n")
-            solver = KnapsackSolver(items, cap)
-            results = {}
-            for name, algo in [("Жадный", solver.greedy), ("Полный перебор", solver.brute_force),
-                               ("DP", solver.dp), ("Ветви и границы", solver.branch_and_bound),
-                               ("Отжиг", solver.simulated_annealing)]:
-                start = time.time()
-                val, _ = algo(lambda *args: None)
-                elapsed = time.time() - start
-                results[name] = (val, elapsed)
-            for name, (val, t) in results.items():
-                self.test_output.insert(tk.END, f"   {name:15}: ценность={val:3}, время={t:.5f} сек\n")
-        self.test_output.insert(tk.END, "\n✅ Тестирование завершено.\n")
+    #     for items, cap, desc, n in test_cases:
+    #         self.test_output.insert(tk.END, f"\n▶ {desc}, вместимость = {cap}\n")
+    #         self.test_output.insert(tk.END, f"   Предметы (первые 5 из {n}):\n")
+    #         for i, it in enumerate(items[:5]):
+    #             self.test_output.insert(tk.END, f"      {it.name}: вес={it.weight}, ценность={it.value}\n")
+    #         if n > 5:
+    #             self.test_output.insert(tk.END, f"      ... и ещё {n-5} предметов\n")
+    #         solver = KnapsackSolver(items, cap)
+    #         results = {}
+    #         for name, algo in [("Жадный", solver.greedy), ("Полный перебор", solver.brute_force),
+    #                            ("DP", solver.dp), ("Ветви и границы", solver.branch_and_bound),
+    #                            ("Отжиг", solver.simulated_annealing)]:
+    #             start = time.time()
+    #             val, _ = algo(lambda *args: None)
+    #             elapsed = time.time() - start
+    #             results[name] = (val, elapsed)
+    #         for name, (val, t) in results.items():
+    #             self.test_output.insert(tk.END, f"   {name:15}: ценность={val:3}, время={t:.5f} сек\n")
+    #     self.test_output.insert(tk.END, "\n✅ Тестирование завершено.\n")
 
-    def test_graph(self):
-        self.test_output.delete(1.0, tk.END)
-        self.test_output.insert(tk.END, "Тестирование алгоритмов поиска пути (расширенные графы)\n" + "="*70 + "\n\n")
-        from algorithms.shortest_path import ShortestPathSolver
-        import random
-        random.seed(42)
+    # def test_graph(self):
+    #     self.test_output.delete(1.0, tk.END)
+    #     self.test_output.insert(tk.END, "Тестирование алгоритмов поиска пути (расширенные графы)\n" + "="*70 + "\n\n")
+    #     from algorithms.shortest_path import ShortestPathSolver
+    #     import random
+    #     random.seed(42)
         
-        # Граф 1: 10 вершин, плотность 20%, есть отрицательные рёбра
-        n1 = 10
-        graph1 = {i: [] for i in range(n1)}
-        edge_count1 = 0
-        for i in range(n1):
-            for j in range(n1):
-                if i != j and random.random() < 0.2:
-                    w = random.randint(1, 20)
-                    graph1[i].append((j, w))
-                    edge_count1 += 1
-        graph1[0].append((5, -3))
-        graph1[5].append((2, -2))
-        edge_count1 += 2
-        src1, tgt1 = 0, n1-1
+    #     # Граф 1: 10 вершин, плотность 20%, есть отрицательные рёбра
+    #     n1 = 10
+    #     graph1 = {i: [] for i in range(n1)}
+    #     edge_count1 = 0
+    #     for i in range(n1):
+    #         for j in range(n1):
+    #             if i != j and random.random() < 0.2:
+    #                 w = random.randint(1, 20)
+    #                 graph1[i].append((j, w))
+    #                 edge_count1 += 1
+    #     graph1[0].append((5, -3))
+    #     graph1[5].append((2, -2))
+    #     edge_count1 += 2
+    #     src1, tgt1 = 0, n1-1
         
-        self.test_output.insert(tk.END, f"▶ Граф 1: {n1} вершин, {edge_count1} рёбер, старт={src1}, цель={tgt1}\n")
-        self.test_output.insert(tk.END, f"   Примеры рёбер (первые 10):\n")
-        shown = 0
-        for u in sorted(graph1.keys()):
-            for v, w in graph1[u]:
-                self.test_output.insert(tk.END, f"      {u} → {v} (вес {w})\n")
-                shown += 1
-                if shown >= 10:
-                    break
-            if shown >= 10:
-                break
-        if edge_count1 > 10:
-            self.test_output.insert(tk.END, f"      ... и ещё {edge_count1-10} рёбер\n")
+    #     self.test_output.insert(tk.END, f"▶ Граф 1: {n1} вершин, {edge_count1} рёбер, старт={src1}, цель={tgt1}\n")
+    #     self.test_output.insert(tk.END, f"   Примеры рёбер (первые 10):\n")
+    #     shown = 0
+    #     for u in sorted(graph1.keys()):
+    #         for v, w in graph1[u]:
+    #             self.test_output.insert(tk.END, f"      {u} → {v} (вес {w})\n")
+    #             shown += 1
+    #             if shown >= 10:
+    #                 break
+    #         if shown >= 10:
+    #             break
+    #     if edge_count1 > 10:
+    #         self.test_output.insert(tk.END, f"      ... и ещё {edge_count1-10} рёбер\n")
         
-        results1 = {}
-        negative_exists = any(w < 0 for u in graph1 for v,w in graph1[u])
-        for name, algo in [("Дейкстра", lambda s: s.dijkstra), ("Полный перебор", lambda s: s.brute_force),
-                           ("Беллман-Форд", lambda s: s.bellman_ford), ("A*", lambda s: s.a_star),
-                           ("Флойд-Уоршелл", lambda s: s.floyd_warshall)]:
-            if name == "Дейкстра" and negative_exists:
-                self.test_output.insert(tk.END, f"   {name:15}: пропущен (отрицательные веса)\n")
-                continue
-            start = time.time()
-            solver = ShortestPathSolver(graph1, src1, tgt1, n1)
-            try:
-                dist, _ = algo(solver)(lambda *args: None)
-            except Exception as e:
-                dist = f"Ошибка: {e}"
-            elapsed = time.time() - start
-            results1[name] = (dist, elapsed)
-        for name, (d, t) in results1.items():
-            self.test_output.insert(tk.END, f"   {name:15}: расстояние={d:3}, время={t:.5f} сек\n")
+    #     results1 = {}
+    #     negative_exists = any(w < 0 for u in graph1 for v,w in graph1[u])
+    #     for name, algo in [("Дейкстра", lambda s: s.dijkstra), ("Полный перебор", lambda s: s.brute_force),
+    #                        ("Беллман-Форд", lambda s: s.bellman_ford), ("A*", lambda s: s.a_star),
+    #                        ("Флойд-Уоршелл", lambda s: s.floyd_warshall)]:
+    #         if name == "Дейкстра" and negative_exists:
+    #             self.test_output.insert(tk.END, f"   {name:15}: пропущен (отрицательные веса)\n")
+    #             continue
+    #         start = time.time()
+    #         solver = ShortestPathSolver(graph1, src1, tgt1, n1)
+    #         try:
+    #             dist, _ = algo(solver)(lambda *args: None)
+    #         except Exception as e:
+    #             dist = f"Ошибка: {e}"
+    #         elapsed = time.time() - start
+    #         results1[name] = (dist, elapsed)
+    #     for name, (d, t) in results1.items():
+    #         self.test_output.insert(tk.END, f"   {name:15}: расстояние={d:3}, время={t:.5f} сек\n")
         
-        # Граф 2: 15 вершин, плотность 15%, все веса положительные
-        n2 = 15
-        graph2 = {i: [] for i in range(n2)}
-        edge_count2 = 0
-        for i in range(n2):
-            for j in range(n2):
-                if i != j and random.random() < 0.15:
-                    w = random.randint(1, 30)
-                    graph2[i].append((j, w))
-                    edge_count2 += 1
-        src2, tgt2 = 0, n2-1
+    #     # Граф 2: 15 вершин, плотность 15%, все веса положительные
+    #     n2 = 15
+    #     graph2 = {i: [] for i in range(n2)}
+    #     edge_count2 = 0
+    #     for i in range(n2):
+    #         for j in range(n2):
+    #             if i != j and random.random() < 0.15:
+    #                 w = random.randint(1, 30)
+    #                 graph2[i].append((j, w))
+    #                 edge_count2 += 1
+    #     src2, tgt2 = 0, n2-1
         
-        self.test_output.insert(tk.END, f"\n▶ Граф 2: {n2} вершин, {edge_count2} рёбер, старт={src2}, цель={tgt2} (все веса ≥0)\n")
-        self.test_output.insert(tk.END, f"   Примеры рёбер (первые 10):\n")
-        shown = 0
-        for u in sorted(graph2.keys()):
-            for v, w in graph2[u]:
-                self.test_output.insert(tk.END, f"      {u} → {v} (вес {w})\n")
-                shown += 1
-                if shown >= 10:
-                    break
-            if shown >= 10:
-                break
-        if edge_count2 > 10:
-            self.test_output.insert(tk.END, f"      ... и ещё {edge_count2-10} рёбер\n")
+    #     self.test_output.insert(tk.END, f"\n▶ Граф 2: {n2} вершин, {edge_count2} рёбер, старт={src2}, цель={tgt2} (все веса ≥0)\n")
+    #     self.test_output.insert(tk.END, f"   Примеры рёбер (первые 10):\n")
+    #     shown = 0
+    #     for u in sorted(graph2.keys()):
+    #         for v, w in graph2[u]:
+    #             self.test_output.insert(tk.END, f"      {u} → {v} (вес {w})\n")
+    #             shown += 1
+    #             if shown >= 10:
+    #                 break
+    #         if shown >= 10:
+    #             break
+    #     if edge_count2 > 10:
+    #         self.test_output.insert(tk.END, f"      ... и ещё {edge_count2-10} рёбер\n")
         
-        for name, algo in [("Дейкстра", lambda s: s.dijkstra), ("Беллман-Форд", lambda s: s.bellman_ford),
-                           ("A*", lambda s: s.a_star), ("Флойд-Уоршелл", lambda s: s.floyd_warshall),
-                           ("Полный перебор", lambda s: s.brute_force)]:
-            start = time.time()
-            solver = ShortestPathSolver(graph2, src2, tgt2, n2)
-            try:
-                dist, _ = algo(solver)(lambda *args: None)
-            except Exception as e:
-                dist = f"Ошибка"
-            elapsed = time.time() - start
-            self.test_output.insert(tk.END, f"   {name:15}: расстояние={dist:3}, время={elapsed:.5f} сек\n")
+    #     for name, algo in [("Дейкстра", lambda s: s.dijkstra), ("Беллман-Форд", lambda s: s.bellman_ford),
+    #                        ("A*", lambda s: s.a_star), ("Флойд-Уоршелл", lambda s: s.floyd_warshall),
+    #                        ("Полный перебор", lambda s: s.brute_force)]:
+    #         start = time.time()
+    #         solver = ShortestPathSolver(graph2, src2, tgt2, n2)
+    #         try:
+    #             dist, _ = algo(solver)(lambda *args: None)
+    #         except Exception as e:
+    #             dist = f"Ошибка"
+    #         elapsed = time.time() - start
+    #         self.test_output.insert(tk.END, f"   {name:15}: расстояние={dist:3}, время={elapsed:.5f} сек\n")
         
-        self.test_output.insert(tk.END, "\n✅ Тестирование завершено.\n")
+    #     self.test_output.insert(tk.END, "\n✅ Тестирование завершено.\n")
 
-    def test_sorting(self):
-        self.test_output.delete(1.0, tk.END)
-        self.test_output.insert(tk.END, "Тестирование алгоритмов сортировки (расширенные массивы)\n" + "="*70 + "\n\n")
-        import random
-        random.seed(42)
-        test_arrays = [
-            ([random.randint(1, 1000) for _ in range(100)], "Случайный массив", 100),
-            ([random.randint(1, 1000) for _ in range(500)], "Случайный массив", 500),
-            ([random.randint(1, 1000) for _ in range(1000)], "Случайный массив", 1000),
-            (list(range(1000, 0, -1)), "Обратный порядок", 1000),
-            (list(range(1000)), "Уже отсортированный", 1000),
-        ]
-        for arr, desc, size in test_arrays:
-            self.test_output.insert(tk.END, f"▶ {desc}, размер = {size}\n")
-            self.test_output.insert(tk.END, f"   Первые 10 элементов: {arr[:10]}{'...' if size > 10 else ''}\n")
-            results = {}
-            for name, algo in [("Пузырьковая", "bubble_sort"), ("Выбором", "selection_sort"),
-                               ("Вставками", "insertion_sort"), ("Быстрая", "quick_sort"),
-                               ("Слиянием", "merge_sort"), ("Подсчётом", "counting_sort")]:
-                if name == "Пузырьковая" and size > 200:
-                    self.test_output.insert(tk.END, f"   {name:15}: пропущен (слишком медленный)\n")
-                    continue
-                solver = SortingSolver(arr[:])
-                start = time.time()
-                getattr(solver, algo)(lambda *args: None)
-                elapsed = time.time() - start
-                results[name] = elapsed
-            for name, t in results.items():
-                self.test_output.insert(tk.END, f"   {name:15}: время={t:.5f} сек\n")
-            self.test_output.insert(tk.END, "\n")
-        self.test_output.insert(tk.END, "✅ Тестирование завершено.\n")
+    # def test_sorting(self):
+    #     self.test_output.delete(1.0, tk.END)
+    #     self.test_output.insert(tk.END, "Тестирование алгоритмов сортировки (расширенные массивы)\n" + "="*70 + "\n\n")
+    #     import random
+    #     random.seed(42)
+    #     test_arrays = [
+    #         ([random.randint(1, 1000) for _ in range(100)], "Случайный массив", 100),
+    #         ([random.randint(1, 1000) for _ in range(500)], "Случайный массив", 500),
+    #         ([random.randint(1, 1000) for _ in range(1000)], "Случайный массив", 1000),
+    #         (list(range(1000, 0, -1)), "Обратный порядок", 1000),
+    #         (list(range(1000)), "Уже отсортированный", 1000),
+    #     ]
+    #     for arr, desc, size in test_arrays:
+    #         self.test_output.insert(tk.END, f"▶ {desc}, размер = {size}\n")
+    #         self.test_output.insert(tk.END, f"   Первые 10 элементов: {arr[:10]}{'...' if size > 10 else ''}\n")
+    #         results = {}
+    #         for name, algo in [("Пузырьковая", "bubble_sort"), ("Выбором", "selection_sort"),
+    #                            ("Вставками", "insertion_sort"), ("Быстрая", "quick_sort"),
+    #                            ("Слиянием", "merge_sort"), ("Подсчётом", "counting_sort")]:
+    #             if name == "Пузырьковая" and size > 200:
+    #                 self.test_output.insert(tk.END, f"   {name:15}: пропущен (слишком медленный)\n")
+    #                 continue
+    #             solver = SortingSolver(arr[:])
+    #             start = time.time()
+    #             getattr(solver, algo)(lambda *args: None)
+    #             elapsed = time.time() - start
+    #             results[name] = elapsed
+    #         for name, t in results.items():
+    #             self.test_output.insert(tk.END, f"   {name:15}: время={t:.5f} сек\n")
+    #         self.test_output.insert(tk.END, "\n")
+    #     self.test_output.insert(tk.END, "✅ Тестирование завершено.\n")
 
     # ==================== ОБЩИЕ МЕТОДЫ ====================
     def stop_algorithm(self):
